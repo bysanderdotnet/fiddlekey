@@ -24,6 +24,15 @@ function copyEssentiaWasm() {
 const R2_BASE_URL = 'https://r2-fiddlekey.bysander.net';
 
 export default defineConfig({
+  build: {
+    rollupOptions: {
+      // Multi-page: the app plus the /benchmark detector-comparison page.
+      input: {
+        main: new URL('./index.html', import.meta.url).pathname,
+        benchmark: new URL('./benchmark.html', import.meta.url).pathname,
+      },
+    },
+  },
   resolve: {
     conditions: ['onnxruntime-web-use-extern-wasm', 'module', 'browser', 'development|production'],
   },

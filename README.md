@@ -92,16 +92,67 @@ where `mode` is always `"major"` or `"minor"`.
 
 ---
 
-## Benchmark mode (planned, see feature list)
+## Benchmark mode
 
-`/benchmark` lets coders measure the impact of their changes on detection quality:
+The `/benchmark` page (`benchmark.html`, code in `src/benchmark/`) is the main
+tool for **developing detectors**: after changing a detector, run the benchmark
+to check whether the change actually improved accuracy or time-to-detect — and
+use the per-detector summary table to decide which detector should be the
+default (`DEFAULT_DETECTOR_ID` in `src/detection/factory.js`).
+
+How it works:
 
 - Uses the tunes in `abc/` as ground truth (filename encodes the key; modal tunes
   map to major/minor by their third: lydian/mixolydian → major, dorian/phrygian → minor).
-- Converts ABC to WAV **on the fly** — generated audio is never committed.
-- Streams the audio through every registered detector with a deterministic clock
-  (`deterministicClock` option in `src/audio/worker.js`) and reports accuracy and
-  time-to-detect per detector.
+- Synthesizes ABC to PCM **on the fly** with a fiddle-like tone
+  (`src/benchmark/abc-synth.js`) — generated audio is never committed.
+- Streams the audio through the **same worker pipeline the app uses**
+  (`src/audio/worker.js`) so performance and behavior match the real app.
+- Reports per (tune × detector): final detection, correctness, first-correct and
+  settled time (in audio ms), update count, and wall-clock processing time.
+
+### Selecting what to run
+
+Running all tunes × all detectors gets very long. Both the UI (checkboxes) and
+the programmatic API let you pick a subset:
+
+```js
+// In the browser console on /benchmark, or injected via Playwright:
+const results = await window.fiddlekeyBenchmark.run({
+  detectors: ['essentia', 'meyda'],   // omit or [] = all registered detectors
+  tunes: ['c_major', 'a_minor'],      // omit or [] = all abc/ tunes
+  durationSec: 30,                    // seconds of audio per tune
+  noise: { type: 'session', snrDb: 10, seed: 1 }
+});
+```
+
+Because the benchmark runs in the browser, drive it headlessly with Playwright:
+open `/benchmark.html`, wait for `window.fiddlekeyBenchmark`, and `page.evaluate`
+the call above (see `tests/benchmark.spec.js` for a working example). Running in
+the real browser environment is deliberate — it ensures measured performance is
+representative of the actual application.
+
+### Determinism
+
+Runs are reproducible: the synth uses no randomness, noise comes from a seeded
+PRNG (per-tune seed derived from `seed ^ hash(tuneName)`, so a tune's noise
+doesn't depend on which other tunes are selected), and the worker pins
+`Date.now()` to the amount of audio processed (`deterministicClock`), so
+detector emission timing doesn't depend on machine speed. Identical options →
+identical detection traces; only `wallMs` (real processing time) varies.
+
+### Noise simulation
+
+Fiddle jam sessions happen in noisy pubs, so the benchmark can mix background
+noise into the signal (`src/benchmark/noise.js`):
+
+- `session` — typical jam ambience: crowd babble (amplitude-modulated pink
+  noise voices), foot taps on the beat (~120 bpm low thumps), and occasional
+  glass clinks.
+- `babble` — crowd chatter only.
+- `white` — worst-case broadband noise.
+- `snrDb` sets signal-to-noise ratio: 20 ≈ quiet corner, 10 ≈ lively pub,
+  0 = noise as loud as the tune.
 
 ---
 
