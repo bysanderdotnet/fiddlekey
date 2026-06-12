@@ -41,7 +41,7 @@
     {
       "id": "F-00001",
       "title": "Benchmark mode at /benchmark",
-      "status": "in_progress",
+      "status": "done",
       "notes": "Compare detectors: convert abc/ tunes to WAV on the fly (never commit audio), stream through every detector in factory.js with deterministicClock (src/audio/worker.js), report accuracy + time-to-detect per detector. Ground truth from abc filename (R-008 mapping)."
     },
     {
@@ -117,6 +117,14 @@
       "verified": "pass (2026-06-12 21:52 UTC @ b24f036)",
       "blockers": "none",
       "commit": "b24f036 (+ uncommitted changes)"
+    },
+    {
+      "date": "2026-06-12 22:19 UTC",
+      "title": "Benchmark mode at /benchmark",
+      "done": "src/benchmark/{abc-synth,noise,tunes,runner,main}.js + benchmark.html. Deterministic ABC->PCM fiddle synth (no Math.random). Seeded session noise: babble + foot taps + clinks; types none/session/babble/white, snrDb, seed. Selectable detector/tune subsets via UI or window.fiddlekeyBenchmark.run() — Playwright-injectable (tests/benchmark.spec.js). worker.js: detector_ready + flush handshake. Metrics per run: correct, firstCorrectMs, settledMs, wallMs; summarize() rollup. README Benchmark section. Determinism asserted in e2e (identical traces minus wallMs).",
+      "verified": "pass (2026-06-12 22:18 UTC @ f4fc136)",
+      "blockers": "none",
+      "commit": "1540e84"
     }
   ],
   "rules": [
@@ -172,6 +180,12 @@
       "id": "R-010",
       "category": "conventions",
       "text": "R2 base URL: https://r2-fiddlekey.bysander.net. Agents have NO R2 credentials; never script uploads. New large asset: script to fetch/generate it + name suggestion + r2-assets.json entry, then ask human to upload.",
+      "added": "2026-06-12"
+    },
+    {
+      "id": "R-011",
+      "category": "testing",
+      "text": "Benchmark: /benchmark page, window.fiddlekeyBenchmark.run({detectors,tunes,durationSec,noise:{type,snrDb,seed}}); deterministic minus wallMs; noise types session/babble/white",
       "added": "2026-06-12"
     }
   ]
