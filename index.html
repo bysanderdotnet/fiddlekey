@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fiddlekey</title>
+    <link rel="stylesheet" href="/src/styles/main.css">
+  </head>
+  <body>
+    <div id="app">
+      <h1>Fiddlekey 🎻</h1>
+      <div class="controls">
+        <button id="startButton">Detect key</button>
+        <button id="installButton" style="display: none;">Install App</button>
+      </div>
+      <details class="settings-menu">
+        <summary>Settings</summary>
+        <div class="settings-panel">
+          <label class="setting-row" for="detectorSelect">
+            <span>Detector</span>
+            <select id="detectorSelect" aria-label="Detector"></select>
+          </label>
+        </div>
+      </details>
+      <div id="error-message" style="color: var(--error-color); margin-top: 10px; min-height: 1.2em;"></div>
+
+      <div id="key-display">
+        <div class="listening-indicator"></div>
+        <div class="key-badge">---</div>
+        <div class="analysis-status" aria-live="polite"></div>
+        <div class="confidence-container">
+          <div class="confidence-fill status-none"></div>
+        </div>
+      </div>
+
+      <div id="notes-display"></div>
+      <div id="fingerboard"></div>
+    </div>
+
+    <div id="onboarding" class="overlay" style="display: none;">
+      <div class="overlay-content">
+        <h2>Welcome to Fiddlekey! 🎻</h2>
+        <p>Fiddlekey listens to the tune around you and tells you the key — the tonic plus major or minor.</p>
+        <ul>
+          <li><strong>Detect key:</strong> Tap the button to record a short sample and analyze the key.</li>
+          <li><strong>Key Badge:</strong> Shows the detected key once the analysis has settled.</li>
+          <li><strong>Safe Notes:</strong> Highlights notes that fit the detected key.</li>
+          <li><strong>Fingerboard:</strong> Shows where to place your fingers in first position.</li>
+        </ul>
+        <p>Best used in a quiet spot or near the lead melody instrument.</p>
+        <button id="closeOnboarding">Got it!</button>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
