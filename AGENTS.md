@@ -10,10 +10,11 @@ handoff. All state in `.agents/agents.json`, CLI-owned — never hand-edit.
 
 ## Project
 
-<!-- TODO(setup): fill in, then remove this comment -->
-- Name:
-- Stack:
-- Purpose:
+- Name: Fiddlekey
+- Stack: Vanilla JS + Vite PWA; essentia.js / Web Audio detectors in a Web
+  Worker; Vitest unit tests; Playwright e2e against production build.
+- Purpose: Web app that listens to a jam session and detects the key —
+  tonic + major/minor ONLY (no church modes; that was Bourdon's mistake).
 
 ## Rules
 
@@ -21,7 +22,11 @@ handoff. All state in `.agents/agents.json`, CLI-owned — never hand-edit.
 - Done = `./AGENTS.sh verify` green. Anything else = "unverified" — say so.
 - `AGENTS.sh` / `.agents/agents.py` = harness internals. Usage = `help`,
   not reading or editing source.
-<!-- TODO(setup): add project no-go zones (e.g. "never edit /migrations"), then remove this comment -->
+- Never test via `vite dev` — always `npm run build` + static serve
+  (`npm run preview`); dev bundles workers/WASM differently.
+- Never commit large/binary assets (WAV, ONNX) — host on Cloudflare R2
+  (see README). No Git LFS.
+- Detection modes = `major`/`minor` only. Never reintroduce modal keys.
 
 ## Skills
 

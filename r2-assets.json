@@ -1,0 +1,14 @@
+[
+  {
+    "src": "public/models/hf-key-class-int8.onnx",
+    "dest": "models/hf-key-class-int8.onnx",
+    "contentType": "application/octet-stream",
+    "cacheControl": "public, max-age=31536000, immutable"
+  },
+  {
+    "src": "public/models/hf-key-class-nonquantized.onnx",
+    "dest": "models/hf-key-class-nonquantized.onnx",
+    "contentType": "application/octet-stream",
+    "cacheControl": "public, max-age=31536000, immutable"
+  }
+]

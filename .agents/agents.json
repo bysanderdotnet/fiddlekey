@@ -1,17 +1,148 @@
 {
   "$comment": "All durable harness state, owned by the CLI (./AGENTS.sh) — never hand-edit. Keys: setup (present only while guided setup is pending; init drives it), commands (via `cmd set/rm`; verify = definition-of-done step, init = session-start check), features (via `feature ...`; max one in_progress, never delete — mark done), progress (via `log`; append-only, display bounded by the CLI), rules (via `docs add/rm`; curated project knowledge). Future harness versions may add top-level keys. Transient scratch lives in agents.scratch.json (gitignored).",
-  "setup": {
-    "done": []
+  "commands": {
+    "test": {
+      "run": "npm run test",
+      "verify": true,
+      "desc": "Vitest unit tests"
+    },
+    "build": {
+      "run": "npm run build",
+      "verify": true,
+      "desc": "Production build to dist/"
+    },
+    "e2e": {
+      "run": "npm run e2e",
+      "verify": true,
+      "desc": "Playwright vs production build (npx playwright install chromium first time)"
+    },
+    "deps": {
+      "run": "npm install",
+      "init": true,
+      "desc": "Install dependencies"
+    },
+    "preview": {
+      "run": "npm run preview",
+      "desc": "Serve dist/ on local webserver"
+    },
+    "browsers": {
+      "run": "npx playwright install chromium",
+      "init": true,
+      "desc": "Playwright chromium for e2e (no-op when cached)"
+    }
   },
-  "commands": {},
   "features": [
     {
       "id": "F-000",
       "title": "Complete guided project setup",
-      "status": "todo",
+      "status": "done",
       "notes": "Driven by ./AGENTS.sh init (SETUP MODE); closes itself when setup finalizes."
+    },
+    {
+      "id": "F-00001",
+      "title": "Benchmark mode at /benchmark",
+      "status": "todo",
+      "notes": "Compare detectors: convert abc/ tunes to WAV on the fly (never commit audio), stream through every detector in factory.js with deterministicClock (src/audio/worker.js), report accuracy + time-to-detect per detector. Ground truth from abc filename (R-008 mapping)."
+    },
+    {
+      "id": "F-00002",
+      "title": "Port ONNX HF key-class detector from bourdon",
+      "status": "todo",
+      "notes": "bourdon's hf-key-class-detector.js + onnx-runtime.js; models already on R2 (r2-assets.json, https://r2-bourdon.bysander.net/models/). Adapt resolveMode to major/minor via scoreKeyCandidates. Adds onnxruntime-web dep."
+    },
+    {
+      "id": "F-00003",
+      "title": "R2 sync script",
+      "status": "todo",
+      "notes": "scripts/ + optional CI: sync r2-assets.json entries to R2 via S3 API. Env: R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_API_URL (user sets; assume present)."
+    },
+    {
+      "id": "F-00004",
+      "title": "Evaluate more detectors from bourdon",
+      "status": "todo",
+      "notes": "Candidates in bourdon-main.zip: meyda, essentia KeyExtractor, essentia NNLS, ml-pitch-histogram, ensemble. Port only what benchmark proves worthwhile; strip modal logic."
+    },
+    {
+      "id": "F-00005",
+      "title": "CI toolchain for verify",
+      "status": "blocked",
+      "notes": "Needs human: .github/workflows/agents.yml is human-owned; add setup-node + npm ci + npx playwright install chromium --with-deps before ./AGENTS.sh ci."
     }
   ],
-  "progress": [],
-  "rules": []
+  "progress": [
+    {
+      "date": "2026-06-12 21:24 UTC",
+      "title": "project setup",
+      "done": "setup complete: 5 command(s) registered, 5 feature(s) seeded, 8 rule(s) recorded",
+      "verified": "pass (2026-06-12 21:24 UTC @ dd401e7)",
+      "blockers": "none",
+      "feature": "F-000"
+    },
+    {
+      "date": "2026-06-12 21:25 UTC",
+      "title": "Repo setup: fiddlekey scaffolded from bourdon",
+      "done": "App ported from bourdon-main.zip, simplified to major/minor only (Krumhansl-Schmuckler profiles, 24 candidates). 2 detectors: essentia HPCP, webaudio PCP. Lean playwright: builds + serves dist/ (never vite dev). abc/ fixtures copied. README/AGENTS.md rewritten; R2 docs in README. Features F-00001..5 seeded. verify green: test (24), build, e2e (2).",
+      "verified": "pass (2026-06-12 21:24 UTC @ dd401e7)",
+      "blockers": "none",
+      "commit": "dd401e7 (+ uncommitted changes)"
+    },
+    {
+      "date": "2026-06-12 21:31 UTC",
+      "title": "CI fix: install playwright chromium during init",
+      "done": "CI e2e failed: no browser on runner. Added init cmd 'browsers' (npx playwright install chromium), runs in ./AGENTS.sh ci before verify. R-007 -> R-009. Local ./AGENTS.sh ci green.",
+      "verified": "pass (2026-06-12 21:31 UTC @ d20ffdf)",
+      "blockers": "none",
+      "commit": "d20ffdf (+ uncommitted changes)"
+    }
+  ],
+  "rules": [
+    {
+      "id": "R-001",
+      "category": "architecture",
+      "text": "Audio: mic -> AudioWorklet (4096 PCM) -> Web Worker (src/audio/worker.js) -> KeyDetector. Detectors in src/detection/specifics/, registered in src/detection/factory.js, lazy-loaded.",
+      "added": "2026-06-12"
+    },
+    {
+      "id": "R-002",
+      "category": "architecture",
+      "text": "Detection result contract: { tonic, mode, score, confidence, alternate, chroma }; mode is 'major'|'minor' only.",
+      "added": "2026-06-12"
+    },
+    {
+      "id": "R-003",
+      "category": "architecture",
+      "text": "Profile matching: src/detection/profile-matching.js — Krumhansl-Schmuckler major/minor, Pearson, common-session-key boost. 24 candidates.",
+      "added": "2026-06-12"
+    },
+    {
+      "id": "R-004",
+      "category": "conventions",
+      "text": "Modes = major/minor only. No dorian/mixolydian/etc — that complexity killed bourdon.",
+      "added": "2026-06-12"
+    },
+    {
+      "id": "R-005",
+      "category": "conventions",
+      "text": "Large binaries (WAV, ONNX) never in repo; host on Cloudflare R2 (r2-assets.json + README). No Git LFS.",
+      "added": "2026-06-12"
+    },
+    {
+      "id": "R-006",
+      "category": "testing",
+      "text": "Never test via vite dev; always npm run build + serve dist/ (npm run preview). playwright.config.js webServer enforces this.",
+      "added": "2026-06-12"
+    },
+    {
+      "id": "R-008",
+      "category": "testing",
+      "text": "Benchmark ground truth = abc/ filenames; modal tunes map by third: lydian/mixolydian->major, dorian/phrygian->minor.",
+      "added": "2026-06-12"
+    },
+    {
+      "id": "R-009",
+      "category": "testing",
+      "text": "e2e chromium auto-installed by init cmd 'browsers' (npx playwright install chromium). Fake mic via launch flags in playwright.config.js.",
+      "added": "2026-06-12"
+    }
+  ]
 }

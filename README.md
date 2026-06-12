@@ -1,110 +1,131 @@
-# template-ai-harness
+# Fiddlekey 🎻
 
-Template repository for setting up projects with an AI harness. It ships a
-small, project-local workflow layer that helps AI coding agents start sessions,
-stay scoped to one feature, run verification, record progress, and hand work off
-cleanly between sessions.
+**A web app that automatically detects the key of a jam session.**
 
-> Starting a new project from this template? Just start an agent session —
-> the harness detects the unconfigured project and guides the agent through
-> setup step by step (`./AGENTS.sh init`).
+Fiddlekey listens to the music being played around you and instantly tells you:
+- what **key** the tune is in — the tonic plus **major or minor**, nothing fancier
+- which **notes are safe to play**
+- where to **put your fingers** on the violin
 
-## Quick start
+No sheet music required. No internet required. Just open it on your phone and start playing.
 
-Use the root wrapper for all harness operations:
+Fiddlekey is the successor of [Bourdon](https://github.com/bysanderdotnet/bourdon).
+Bourdon tried to detect full church modes (Dorian, Mixolydian, ...) and grew too
+complex. Fiddlekey keeps the good parts — the audio pipeline and the swappable
+detectors — and deliberately limits detection to **tonic + major/minor**.
 
-```sh
-./AGENTS.sh help
-./AGENTS.sh init
-./AGENTS.sh verify
-./AGENTS.sh handoff
-```
+---
 
-`AGENTS.sh` finds an available Python interpreter and forwards every argument to
-the stdlib-only harness CLI in `.agents/agents.py`. Agents and humans should use
-the wrapper instead of reaching into `.agents/` directly; the implementation and
-state there are harness internals.
+## The Problem
 
-## What's inside
+Folk jam sessions are intimidating for beginners. There is no conductor, no sheet
+music handed out, and tunes start without warning. The hardest part is not playing
+the notes — it is knowing *which* notes are safe, and in *what key* the tune is
+running. Once you have that, your ear can do the rest.
 
-```
-AGENTS.sh                  Public harness entrypoint; forwards to .agents/agents.py
-AGENTS.md                  Agent operating manual — the single manual
-CLAUDE.md -> AGENTS.md     Claude Code entrypoint (symlink)
-GEMINI.md -> AGENTS.md     Gemini CLI entrypoint (symlink)
-.github/
-├── copilot-instructions.md  GitHub Copilot entrypoint (points to AGENTS.md)
-└── workflows/agents.yml   CI: ./AGENTS.sh ci on push/PR
-.claude/
-├── settings.json          SessionStart hook (auto-runs ./AGENTS.sh init) + permissions
-└── skills -> .agents/skills   Skill auto-discovery for Claude Code
-.agents/
-├── README.md              Map of harness internals + design principles
-├── agents.py              Harness CLI implementation; use ./AGENTS.sh help
-├── agents.json            All durable state: commands, features, progress log, rules
-├── agents.scratch.json    Transient scratch (gitignored; last verify result)
-└── skills/
-    └── new-skill/         How to author new skills (projects grow their own)
-```
+---
 
-## One wrapper guides the workflow
+## Features
 
-`./AGENTS.sh` is the stable interface. It abstracts away the `.agents/` folder,
-selects `python3` or `python`, and delegates to the harness CLI. The CLI then
-tells the agent what to do next at every step.
-
-| Subcommand | Job |
+| Feature | Description |
 |---|---|
-| `init` | Session start: on a fresh project it walks guided setup step by step; otherwise health check, skills index, rule counts, git status, current feature, recent progress, and a concrete next step |
-| `verify` | Definition of done: runs registered `--verify` commands in order and records the result |
-| `handoff` | End-of-session checklist with live status: verify fresh? progress logged? feature closed? committed? pushed? |
-| `docs` | Live project docs: a repo map generated from `git ls-files` (never drifts) + curated rules for architecture, conventions, and testing |
-| `maintenance` | Upkeep sweep: re-runs the setup checks (project identity, verify commands), flags rule categories to combine/prune, stale rules, blocked features, skills and commands to re-check |
-| `skill new/list` | Scaffold a new skill playbook in `.agents/skills/<name>/` / list discovered skills |
-| `cmd set/rm/list`, `run` | Command registry: agents register build/test/lint/dev commands instead of editing harness scripts |
-| `feature list/add/start/done/block/note` | Scope tracking; enforces one feature in progress |
-| `log`, `progress` | Session log: entries auto-stamped with date, commit, and last verify result |
-| `check`, `ci` | Structure validation / the single call CI makes |
+| 🎵 **Key detection** | Detects the tonic and major/minor (D Major, A Minor, ...) from live microphone audio within seconds |
+| 🔁 **Swappable detectors** | Multiple key-detection algorithms behind one `KeyDetector` interface; pick one in Settings |
+| 🟢 **Safe notes** | Shows the pentatonic tones and the full 7-note scale for the detected key |
+| 🖐️ **Finger placement** | SVG violin fingerboard showing string and finger for each safe note, in first position |
+| 📱 **Works offline** | Fully client-side PWA — no server, no login, no internet needed at the session |
+| 📊 **Benchmark mode** (planned) | `/benchmark` compares detector accuracy and speed on the ABC test tunes |
 
-Agents never need to know where state lives or hand-edit JSON. Adding a test
-step to a project is `./AGENTS.sh cmd set test "npm test" --verify`, not a
-script rewrite. All subcommand documentation lives in `./AGENTS.sh help`, so
-the manual never drifts from the tool.
+---
 
-## Project docs that don't rot
+## Getting Started (development)
 
-Static architecture documents drift from the code. Here the repo map is
-generated live (`./AGENTS.sh docs`), and only the part worth curating is
-stored: terse rules, added one fact at a time as agents learn them
-(`./AGENTS.sh docs add conventions "..."`). The harness tracks rule counts and
-age; `./AGENTS.sh maintenance` tells an agent doing an upkeep session exactly
-what to combine, prune, or re-validate.
+```bash
+npm install
+npm run dev      # quick local hacking ONLY — never use for testing (see below)
+npm run test     # unit tests (Vitest)
+npm run e2e      # end-to-end tests (Playwright; builds + serves automatically)
+npm run build    # production build to dist/
+npm run preview  # serve dist/ on a local webserver
+```
 
-## Works with
+### Testing rule: always test the production build
 
-| Agent | Entrypoint | Extras |
-|---|---|---|
-| Claude Code | `CLAUDE.md` (symlink) | SessionStart hook auto-runs `./AGENTS.sh init`; skills auto-discovered |
-| OpenAI Codex | `AGENTS.md` (read natively) | — |
-| Gemini CLI | `GEMINI.md` (symlink) | — |
-| GitHub Copilot | `.github/copilot-instructions.md` | Points to `AGENTS.md` and mirrors core rules for surfaces that cannot open repo files |
+`vite dev` does **not** bundle workers, WASM, and assets the same way as
+`vite build`. A page that works on the dev server can break in production.
+Therefore:
 
-One manual, four entrypoints. Agents without hook support run `./AGENTS.sh init`
-manually. Either way, init prints a skills index so every agent sees the local
-playbooks at session start.
+> **Always build the complete project and serve it on a local webserver
+> (`npm run build && npm run preview`) for any testing or verification.
+> Never test against `vite dev`.**
 
-## Design principles
+The Playwright config enforces this: `npm run e2e` builds the project and serves
+`dist/` statically before running the tests.
 
-Based on harness-engineering research (OpenAI, Anthropic,
-[learn-harness-engineering](https://github.com/walkinglabs/learn-harness-engineering)).
+---
 
-1. **Instructions** — `AGENTS.md` stays short; detail lives in
-   `./AGENTS.sh help`, loaded on demand.
-2. **State** — one JSON file behind the CLI, so sessions resume without cold
-   start and agents can't corrupt state by hand-editing.
-3. **Verification** — done means `./AGENTS.sh verify` is green.
-4. **Scope** — one feature at a time, tracked by the CLI and committed alone.
-5. **Handoff** — end sessions with an explicit checklist, progress log, and
-   clean git state.
-6. **Maintenance** — generated docs never drift; curated rules are kept small
-   by an explicit upkeep loop.
+## Architecture
+
+```
+index.html, src/main.js     App shell: start button, detector picker, PWA install, onboarding
+src/audio/                  Mic capture → AudioWorklet (4096-sample PCM chunks) → Web Worker
+src/detection/detector.js   KeyDetector interface: init / process / resetHistory / destroy
+src/detection/factory.js    Detector registry (lazy-loaded); add new detectors here
+src/detection/specifics/    One file per detector implementation
+src/detection/profile-matching.js
+                            Krumhansl-Schmuckler major/minor profiles, Pearson scoring,
+                            common-session-key prior — 24 candidates (12 tonics × 2 modes)
+src/theory/                 Scale/pentatonic helpers (tonal.js)
+src/ui/                     Key badge, safe-notes chips, SVG fingerboard
+abc/                        Test tunes in ABC notation, filename = ground-truth key
+tests/                      Playwright e2e (runs against the production build)
+```
+
+Detection results are plain objects: `{ tonic, mode, score, confidence, alternate, chroma }`
+where `mode` is always `"major"` or `"minor"`.
+
+### Adding a detector
+
+1. Create `src/detection/specifics/<name>-detector.js` extending `KeyDetector`.
+2. Register it in `src/detection/factory.js`.
+3. Compare it against the others in benchmark mode.
+
+---
+
+## Benchmark mode (planned, see feature list)
+
+`/benchmark` lets coders measure the impact of their changes on detection quality:
+
+- Uses the tunes in `abc/` as ground truth (filename encodes the key; modal tunes
+  map to major/minor by their third: lydian/mixolydian → major, dorian/phrygian → minor).
+- Converts ABC to WAV **on the fly** — generated audio is never committed.
+- Streams the audio through every registered detector with a deterministic clock
+  (`deterministicClock` option in `src/audio/worker.js`) and reports accuracy and
+  time-to-detect per detector.
+
+---
+
+## Large assets: Cloudflare R2
+
+GitHub blocks files over 100 MB and we do not use Git LFS. Any large binary
+(ONNX models, audio) is hosted on Cloudflare R2 and fetched at runtime:
+
+- Public base URL: `https://r2-bourdon.bysander.net` (bucket `r2-bourdon`,
+  shared with the Bourdon project; currently hosts the HF key-class ONNX models)
+- `r2-assets.json` lists what lives on R2 (destination path, content type, caching).
+
+To view or edit the bucket, use any S3-compatible client with these environment
+variables (set locally / as GitHub secrets, never committed):
+
+| Variable | Description |
+|---|---|
+| `R2_ACCESS_KEY_ID` | R2 API token access key ID |
+| `R2_SECRET_ACCESS_KEY` | R2 API token secret access key |
+| `R2_API_URL` | S3-compatible endpoint URL of the R2 account |
+
+---
+
+## Agent workflow
+
+This repo uses an AI-agent harness. Start with `./AGENTS.sh init`; see
+`AGENTS.md` for the operating manual and `./AGENTS.sh help` for all commands.
