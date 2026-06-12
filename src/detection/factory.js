@@ -39,6 +39,21 @@ export const DETECTORS = {
     id: 'ensemble',
     label: 'Ensemble (Essentia + Meyda + Web Audio)',
     loadDetectorClass: async () => (await import('./specifics/ensemble-detector.js')).EnsembleDetector
+  },
+  onnxCnn: {
+    id: 'onnxCnn',
+    label: 'ONNX CNN key classifier',
+    loadDetectorClass: async () => (await import('./specifics/onnx-cnn-detector.js')).OnnxCnnDetector
+  },
+  hfKeyClass: {
+    id: 'hfKeyClass',
+    label: 'HF Key Class CNN (jcarbonnell)',
+    loadDetectorClass: async () => (await import('./specifics/hf-key-class-detector.js')).HFKeyClassDetector
+  },
+  hfKeyClassNonQuantized: {
+    id: 'hfKeyClassNonQuantized',
+    label: 'HF Key Class CNN nonquantized (jcarbonnell)',
+    loadDetectorClass: async () => (await import('./specifics/hf-key-class-detector.js')).HFKeyClassNonQuantizedDetector
   }
 };
 

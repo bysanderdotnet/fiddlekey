@@ -47,8 +47,8 @@
     {
       "id": "F-00002",
       "title": "Port ONNX HF key-class detector from bourdon",
-      "status": "todo",
-      "notes": "bourdon's hf-key-class-detector.js + onnx-runtime.js; models already on R2 (r2-assets.json, https://r2-bourdon.bysander.net/models/). Adapt resolveMode to major/minor via scoreKeyCandidates. Adds onnxruntime-web dep."
+      "status": "done",
+      "notes": "Also includes onnx-cnn-detector.js (generated profile-CNN, shares onnx-runtime.js); adapted to 24 major/minor classes."
     },
     {
       "id": "F-00003",
@@ -101,6 +101,14 @@
       "verified": "pass (2026-06-12 21:41 UTC @ 854173f)",
       "blockers": "none",
       "commit": "854173f (+ uncommitted changes)"
+    },
+    {
+      "date": "2026-06-12 21:44 UTC",
+      "title": "Port ONNX detectors from bourdon (HF key-class + profile-CNN)",
+      "done": "Added onnx-runtime.js (shared ORT wasm setup), hf-key-class-detector.js (int8 + nonquantized, models on R2), onnx-cnn-detector.js rebuilt around 24 major/minor K-S profile classes (exported PROFILES from profile-matching.js). vite/vitest: __MODEL_BASE_URL__ define, ORT extern-wasm resolve condition. Dep: onnxruntime-web ^1.26.0. verify green.",
+      "verified": "pass (2026-06-12 21:44 UTC @ d6c9ca4)",
+      "blockers": "none",
+      "commit": "d6c9ca4 (+ uncommitted changes)"
     }
   ],
   "rules": [

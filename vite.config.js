@@ -20,8 +20,17 @@ function copyEssentiaWasm() {
   };
 }
 
+// Large ONNX models live on Cloudflare R2 (see README + r2-assets.json).
+const R2_BASE_URL = 'https://r2-bourdon.bysander.net';
+
 export default defineConfig({
-  optimizeDeps: { exclude: ['essentia.js'] },
+  resolve: {
+    conditions: ['onnxruntime-web-use-extern-wasm', 'module', 'browser', 'development|production'],
+  },
+  optimizeDeps: { exclude: ['essentia.js', 'onnxruntime-web'] },
+  define: {
+    __MODEL_BASE_URL__: JSON.stringify(R2_BASE_URL),
+  },
   plugins: [
     nodePolyfills(),
     copyEssentiaWasm(),
