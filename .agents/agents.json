@@ -24,6 +24,11 @@
     "preview": {
       "run": "npm run preview",
       "desc": "Serve dist/ on local webserver"
+    },
+    "browsers": {
+      "run": "npx playwright install chromium",
+      "init": true,
+      "desc": "Playwright chromium for e2e (no-op when cached)"
     }
   },
   "features": [
@@ -80,6 +85,14 @@
       "verified": "pass (2026-06-12 21:24 UTC @ dd401e7)",
       "blockers": "none",
       "commit": "dd401e7 (+ uncommitted changes)"
+    },
+    {
+      "date": "2026-06-12 21:31 UTC",
+      "title": "CI fix: install playwright chromium during init",
+      "done": "CI e2e failed: no browser on runner. Added init cmd 'browsers' (npx playwright install chromium), runs in ./AGENTS.sh ci before verify. R-007 -> R-009. Local ./AGENTS.sh ci green.",
+      "verified": "pass (2026-06-12 21:31 UTC @ d20ffdf)",
+      "blockers": "none",
+      "commit": "d20ffdf (+ uncommitted changes)"
     }
   ],
   "rules": [
@@ -120,15 +133,15 @@
       "added": "2026-06-12"
     },
     {
-      "id": "R-007",
-      "category": "testing",
-      "text": "e2e needs chromium once: npx playwright install chromium --with-deps. Fake mic via launch flags in playwright.config.js.",
-      "added": "2026-06-12"
-    },
-    {
       "id": "R-008",
       "category": "testing",
       "text": "Benchmark ground truth = abc/ filenames; modal tunes map by third: lydian/mixolydian->major, dorian/phrygian->minor.",
+      "added": "2026-06-12"
+    },
+    {
+      "id": "R-009",
+      "category": "testing",
+      "text": "e2e chromium auto-installed by init cmd 'browsers' (npx playwright install chromium). Fake mic via launch flags in playwright.config.js.",
       "added": "2026-06-12"
     }
   ]
