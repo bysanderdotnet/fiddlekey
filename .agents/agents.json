@@ -53,8 +53,8 @@
     {
       "id": "F-00003",
       "title": "R2 sync script",
-      "status": "todo",
-      "notes": "scripts/ + optional CI: sync r2-assets.json entries to R2 via S3 API. Env: R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_API_URL (user sets; assume present)."
+      "status": "blocked",
+      "notes": "Obsolete: agents get no R2 creds (R2_ACCESS_KEY_ID/SECRET/API_URL never provided). Human uploads to R2. New large asset: prepare get/create script + suggest name, update r2-assets.json, ask human (see README)."
     },
     {
       "id": "F-00004",
@@ -109,6 +109,14 @@
       "verified": "pass (2026-06-12 21:44 UTC @ d6c9ca4)",
       "blockers": "none",
       "commit": "d6c9ca4 (+ uncommitted changes)"
+    },
+    {
+      "date": "2026-06-12 21:52 UTC",
+      "title": "R2 base URL -> r2-fiddlekey.bysander.net; drop R2 creds workflow",
+      "done": "Replaced r2-bourdon.bysander.net in vite.config.js, vitest.config.js, hf-key-class-detector.test.js. README R2 section rewritten: no agent creds, human uploads (script + name + r2-assets.json entry). F-00003 blocked obsolete. R-010 added. New URL HEAD-checked 200 for both models.",
+      "verified": "pass (2026-06-12 21:52 UTC @ b24f036)",
+      "blockers": "none",
+      "commit": "b24f036 (+ uncommitted changes)"
     }
   ],
   "rules": [
@@ -158,6 +166,12 @@
       "id": "R-009",
       "category": "testing",
       "text": "e2e chromium auto-installed by init cmd 'browsers' (npx playwright install chromium). Fake mic via launch flags in playwright.config.js.",
+      "added": "2026-06-12"
+    },
+    {
+      "id": "R-010",
+      "category": "conventions",
+      "text": "R2 base URL: https://r2-fiddlekey.bysander.net. Agents have NO R2 credentials; never script uploads. New large asset: script to fetch/generate it + name suggestion + r2-assets.json entry, then ask human to upload.",
       "added": "2026-06-12"
     }
   ]
