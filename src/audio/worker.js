@@ -37,10 +37,18 @@ self.onmessage = async (event) => {
       await detector.init(sampleRate, bufferSize);
 
       console.log(`[Worker] Initialized detector '${detectorId}' with sampleRate: ${sampleRate}, bufferSize: ${bufferSize}`);
+      self.postMessage({ type: 'detector_ready', detectorId });
     } catch (err) {
       console.error('[Worker] Failed to initialize detector:', err);
       self.postMessage({ type: 'detector_error', detectorId, message: err.message });
     }
+    return;
+  }
+
+  // Benchmark handshake: posted after the last PCM chunk; the echo proves
+  // every queued chunk has been processed.
+  if (data.type === 'flush') {
+    self.postMessage({ type: 'flush_done' });
     return;
   }
 

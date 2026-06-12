@@ -41,7 +41,7 @@
     {
       "id": "F-00001",
       "title": "Benchmark mode at /benchmark",
-      "status": "todo",
+      "status": "in_progress",
       "notes": "Compare detectors: convert abc/ tunes to WAV on the fly (never commit audio), stream through every detector in factory.js with deterministicClock (src/audio/worker.js), report accuracy + time-to-detect per detector. Ground truth from abc filename (R-008 mapping)."
     },
     {
