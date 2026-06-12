@@ -14,6 +14,31 @@ export const DETECTORS = {
     id: 'webaudioPcp',
     label: 'Web Audio PCP',
     loadDetectorClass: async () => (await import('./specifics/webaudio-pcp-detector.js')).WebAudioPCPDetector
+  },
+  essentiaKeyExtractor: {
+    id: 'essentiaKeyExtractor',
+    label: 'Essentia.js KeyExtractor',
+    loadDetectorClass: async () => (await import('./specifics/essentia-key-extractor-detector.js')).KeyEssentiaKeyExtractorDetector
+  },
+  essentiaNnls: {
+    id: 'essentiaNnls',
+    label: 'Essentia.js NNLS chroma',
+    loadDetectorClass: async () => (await import('./specifics/essentia-nnls-detector.js')).KeyEssentiaNNLSDetector
+  },
+  meyda: {
+    id: 'meyda',
+    label: 'Meyda chroma',
+    loadDetectorClass: async () => (await import('./specifics/meyda-detector.js')).MeydaDetector
+  },
+  mlPitchHistogram: {
+    id: 'mlPitchHistogram',
+    label: 'ML pitch-tracking histogram',
+    loadDetectorClass: async () => (await import('./specifics/ml-pitch-histogram-detector.js')).MLPitchHistogramDetector
+  },
+  ensemble: {
+    id: 'ensemble',
+    label: 'Ensemble (Essentia + Meyda + Web Audio)',
+    loadDetectorClass: async () => (await import('./specifics/ensemble-detector.js')).EnsembleDetector
   }
 };
 

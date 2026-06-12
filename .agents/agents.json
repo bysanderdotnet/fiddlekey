@@ -59,7 +59,7 @@
     {
       "id": "F-00004",
       "title": "Evaluate more detectors from bourdon",
-      "status": "todo",
+      "status": "done",
       "notes": "Candidates in bourdon-main.zip: meyda, essentia KeyExtractor, essentia NNLS, ml-pitch-histogram, ensemble. Port only what benchmark proves worthwhile; strip modal logic."
     },
     {
@@ -93,6 +93,14 @@
       "verified": "pass (2026-06-12 21:31 UTC @ d20ffdf)",
       "blockers": "none",
       "commit": "d20ffdf (+ uncommitted changes)"
+    },
+    {
+      "date": "2026-06-12 21:41 UTC",
+      "title": "Port 5 bourdon detectors, major/minor adapted",
+      "done": "Ported meyda, essentia KeyExtractor, essentia NNLS, ml-pitch-histogram, ensemble from bourdon-main.zip. Stripped modal logic: KeyExtractor maps major/minor natively; ensemble prior now D/G/A maj + A/E min; others reuse shared detectKey. Added meyda dep. Skipped bourdon essentia profile variants (Temperley/Diatonic/EDMA/Beauguitte) — modal profile machinery. New tests: 5 files. verify green.",
+      "verified": "pass (2026-06-12 21:41 UTC @ 854173f)",
+      "blockers": "none",
+      "commit": "854173f (+ uncommitted changes)"
     }
   ],
   "rules": [
