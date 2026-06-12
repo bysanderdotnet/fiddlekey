@@ -21,7 +21,7 @@ function copyEssentiaWasm() {
 }
 
 // Large ONNX models live on Cloudflare R2 (see README + r2-assets.json).
-const R2_BASE_URL = 'https://r2-bourdon.bysander.net';
+const R2_BASE_URL = 'https://r2-fiddlekey.bysander.net';
 
 export default defineConfig({
   resolve: {

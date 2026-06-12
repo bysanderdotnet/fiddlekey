@@ -19,8 +19,8 @@ function flushPromises() {
 
 describe('HFKeyClassDetector', () => {
   it('exposes the correct model path constants', () => {
-    expect(MODEL_PATH).toBe('https://r2-bourdon.bysander.net/models/hf-key-class-int8.onnx');
-    expect(MODEL_PATH_NONQUANTIZED).toBe('https://r2-bourdon.bysander.net/models/hf-key-class-nonquantized.onnx');
+    expect(MODEL_PATH).toBe('https://r2-fiddlekey.bysander.net/models/hf-key-class-int8.onnx');
+    expect(MODEL_PATH_NONQUANTIZED).toBe('https://r2-fiddlekey.bysander.net/models/hf-key-class-nonquantized.onnx');
   });
 
   it('HFKeyClassNonQuantizedDetector uses the nonquantized model path', () => {

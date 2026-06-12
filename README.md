@@ -110,18 +110,20 @@ where `mode` is always `"major"` or `"minor"`.
 GitHub blocks files over 100 MB and we do not use Git LFS. Any large binary
 (ONNX models, audio) is hosted on Cloudflare R2 and fetched at runtime:
 
-- Public base URL: `https://r2-bourdon.bysander.net` (bucket `r2-bourdon`,
-  shared with the Bourdon project; currently hosts the HF key-class ONNX models)
+- Public base URL: `https://r2-fiddlekey.bysander.net` (currently hosts the
+  HF key-class ONNX models)
 - `r2-assets.json` lists what lives on R2 (destination path, content type, caching).
 
-To view or edit the bucket, use any S3-compatible client with these environment
-variables (set locally / as GitHub secrets, never committed):
+Uploads to the bucket are done by a human — agents have no R2 credentials and
+must not assume write access. To get a new large asset (e.g. an ONNX model)
+onto R2:
 
-| Variable | Description |
-|---|---|
-| `R2_ACCESS_KEY_ID` | R2 API token access key ID |
-| `R2_SECRET_ACCESS_KEY` | R2 API token secret access key |
-| `R2_API_URL` | S3-compatible endpoint URL of the R2 account |
+1. Prepare a script that downloads or generates the asset (never commit the
+   asset itself).
+2. Suggest a destination path under the base URL (e.g. `models/<name>.onnx` —
+   lowercase, hyphenated, with quantization/variant suffix where relevant).
+3. Add the entry to `r2-assets.json` and ask the human to run the script and
+   upload the result.
 
 ---
 
