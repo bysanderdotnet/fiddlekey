@@ -89,7 +89,7 @@
     {
       "id": "F-00009",
       "title": "webaudioPcp dominant",
-      "status": "todo",
+      "status": "done",
       "notes": "Resolves G instead of C (relative dominant). Harmonic self-vote over-credits the fifth. Accuracy fix + unit test."
     }
   ],
@@ -173,6 +173,14 @@
       "verified": "pass (2026-06-13 12:12 UTC @ 0aab459)",
       "blockers": "none",
       "commit": "0aab459 (+ uncommitted changes)"
+    },
+    {
+      "date": "2026-06-13 12:21 UTC",
+      "title": "F-00009 webaudioPcp dominant",
+      "done": "frequencyDataToPcp h=1 self-vote now weighted by selfHarmonicWeight (default 0.3, was implicit 1) so overtone bins (notably a note's strong 3rd partial = the fifth) stop over-crediting the relative dominant; folded sub-harmonics give genuine fundamentals the edge. c_major now settles C major (was G). Streaming regression test (abc-synth) + mechanism test added.",
+      "verified": "pass (2026-06-13 12:21 UTC @ 44b8470)",
+      "blockers": "none",
+      "commit": "44b8470 (+ uncommitted changes)"
     }
   ],
   "rules": [

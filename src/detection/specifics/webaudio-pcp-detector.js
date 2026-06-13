@@ -10,6 +10,13 @@
  * summation so upper partials reinforce their likely fundamentals. The resulting PCP vectors
  * are unit-normalized, accumulated in a rolling history, averaged for temporal smoothing, and
  * template-matched against the shared major/minor key profiles using Pearson correlation.
+ *
+ * Each spectral bin votes for the pitch classes of its sub-harmonics (bin/h). The h=1 vote —
+ * a bin crediting its own pitch class — is the troublesome one: an overtone bin (e.g. a note's
+ * strong 3rd partial, a perfect fifth above) has no way to know it isn't itself a fundamental,
+ * so at full weight it over-credits the relative dominant and the detector settled a fifth high
+ * (C major read as G major). SELF_HARMONIC_WEIGHT damps that self-vote so genuine fundamentals
+ * — which also collect folded energy from their own overtones — win.
  */
 import { getAveragedChroma } from '../../utils/chroma.js';
 import { KeyDetector } from '../detector.js';
@@ -21,6 +28,7 @@ const MAX_FREQUENCY = 3500;
 const MIN_FFT_SIZE = 4096;
 const MAX_FFT_SIZE = 8192;
 const HARMONIC_COUNT = 4;
+const SELF_HARMONIC_WEIGHT = 0.3;
 const EMIT_INTERVAL_MS = 500;
 
 export class WebAudioPCPDetector extends KeyDetector {
@@ -32,6 +40,7 @@ export class WebAudioPCPDetector extends KeyDetector {
     this.minFrequency = options.minFrequency ?? MIN_FREQUENCY;
     this.maxFrequency = options.maxFrequency ?? MAX_FREQUENCY;
     this.harmonicCount = options.harmonicCount ?? HARMONIC_COUNT;
+    this.selfHarmonicWeight = options.selfHarmonicWeight ?? SELF_HARMONIC_WEIGHT;
     this.audioHistory = [];
     this.historySampleCount = 0;
     this.pcpHistory = [];
@@ -105,7 +114,8 @@ export class WebAudioPCPDetector extends KeyDetector {
         if (fundamental < this.minFrequency || fundamental > this.maxFrequency) continue;
 
         const pitchClass = frequencyToPitchClass(fundamental);
-        pcp[pitchClass] += magnitude / harmonic;
+        const weight = harmonic === 1 ? this.selfHarmonicWeight : 1 / harmonic;
+        pcp[pitchClass] += magnitude * weight;
       }
     }
 
