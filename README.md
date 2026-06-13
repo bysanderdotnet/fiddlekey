@@ -165,6 +165,27 @@ GitHub blocks files over 100 MB and we do not use Git LFS. Any large binary
   HF key-class ONNX models)
 - `r2-assets.json` lists what lives on R2 (destination path, content type, caching).
 
+### CORS (required, human action)
+
+The app is served from a different origin than R2, so it fetches models
+cross-origin. The browser blocks a cross-origin `fetch()` whose response lacks
+`Access-Control-Allow-Origin` — so **without a CORS policy on the bucket the HF
+detectors cannot load at all**, progress can't be measured, and the service
+worker can't store a readable copy.
+
+The bucket must return CORS headers for GET. R2 bucket CORS policy (Cloudflare
+dashboard → R2 → bucket → Settings → CORS, or via API):
+
+```json
+[
+  { "AllowedOrigins": ["*"], "AllowedMethods": ["GET", "HEAD"], "AllowedHeaders": ["*"], "ExposeHeaders": ["Content-Length"], "MaxAgeSeconds": 86400 }
+]
+```
+
+The objects already send `Cache-Control: public, max-age=31536000, immutable`
+(verified), so once CORS is in place the browser HTTP cache and the service
+worker `CacheFirst` rule (see `vite.config.js`) cache each model for good.
+
 Uploads to the bucket are done by a human — agents have no R2 credentials and
 must not assume write access. To get a new large asset (e.g. an ONNX model)
 onto R2:
