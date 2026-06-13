@@ -176,6 +176,37 @@ describe('KeyEssentiaNNLSDetector', () => {
     expect(mocks.nnlsCalls.map(call => call.useNNLS)).toEqual([true, false]);
   });
 
+  it('caches per-frame spectra and does not recompute frames across analyses', async () => {
+    const FRAME_SIZE = 16384;
+    const HOP_SIZE = 2048;
+    await detector.init(44100, 4096);
+    const windowing = vi.spyOn(detector.essentia, 'Windowing');
+
+    // Window 1: offsets 0 and HOP_SIZE both fully fit -> 2 frames computed.
+    detector.totalSamples = FRAME_SIZE + HOP_SIZE;
+    detector.extractNnlsChroma(new Float32Array(FRAME_SIZE + HOP_SIZE).fill(0.1));
+    expect(windowing).toHaveBeenCalledTimes(2);
+
+    // Slide window forward one hop: offset HOP_SIZE stays cached, only the new
+    // trailing frame (offset 2*HOP_SIZE) is computed.
+    detector.totalSamples = FRAME_SIZE + 2 * HOP_SIZE;
+    detector.extractNnlsChroma(new Float32Array(FRAME_SIZE + HOP_SIZE).fill(0.1));
+    expect(windowing).toHaveBeenCalledTimes(3);
+  });
+
+  it('caps new-frame work per analysis at the wall-clock budget', async () => {
+    const FRAME_SIZE = 16384;
+    const HOP_SIZE = 2048;
+    await detector.init(44100, 4096);
+    detector.analysisBudgetMs = -1; // force the cap after the first new frame
+    const windowing = vi.spyOn(detector.essentia, 'Windowing');
+
+    // Several frames available, but budget allows only one new frame this pass.
+    detector.totalSamples = FRAME_SIZE + 4 * HOP_SIZE;
+    detector.extractNnlsChroma(new Float32Array(FRAME_SIZE + 4 * HOP_SIZE).fill(0.1));
+    expect(windowing).toHaveBeenCalledTimes(1);
+  });
+
   it('keeps only the configured rolling analysis window', async () => {
     await detector.init(10, 4);
 

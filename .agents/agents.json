@@ -67,6 +67,30 @@
       "title": "CI toolchain for verify",
       "status": "blocked",
       "notes": "Needs human: .github/workflows/agents.yml is human-owned; add setup-node + npm ci + npx playwright install chromium --with-deps before ./AGENTS.sh ci."
+    },
+    {
+      "id": "F-00006",
+      "title": "essentiaNnls timeout",
+      "status": "done",
+      "notes": "O(n^2) recompute: re-extracts full ~79-frame 16384 window every 500ms (~28s/analysis). Fix: incremental per-frame log-spectrum cache + per-analysis wall-clock budget so it never blows time budget."
+    },
+    {
+      "id": "F-00007",
+      "title": "meyda power-of-2",
+      "status": "done",
+      "notes": "Final partial PCM chunk not power-of-2 -> Meyda.extract throws 'Buffer size must be a power of 2'. Guard: skip non-power-of-2 chunks."
+    },
+    {
+      "id": "F-00008",
+      "title": "ensemble verify-after-meyda",
+      "status": "done",
+      "notes": "Child detector throwing (e.g. Meyda) aborts ensemble loop, skipping detectors after it (webaudioPcp). Wrap each child process() in try/catch so others still run."
+    },
+    {
+      "id": "F-00009",
+      "title": "webaudioPcp dominant",
+      "status": "done",
+      "notes": "Resolves G instead of C (relative dominant). Harmonic self-vote over-credits the fifth. Accuracy fix + unit test."
     }
   ],
   "progress": [
@@ -125,6 +149,38 @@
       "verified": "pass (2026-06-12 22:18 UTC @ f4fc136)",
       "blockers": "none",
       "commit": "1540e84"
+    },
+    {
+      "date": "2026-06-13 12:10 UTC",
+      "title": "F-00006 essentiaNnls timeout",
+      "done": "Incremental per-frame log-spectrum cache (keyed by absolute sample offset, computed once, evicted when window slides) replaces O(n^2) full-window re-extraction. Per-analysis wall-clock budget (analysisBudgetMs=1500) caps new-frame work; >=1 frame always progresses, rest fill on later analyses. Refactor preserves NNLS->linear fallback + rotate(9) output.",
+      "verified": "pass (2026-06-13 12:10 UTC @ c806531)",
+      "blockers": "none",
+      "commit": "c806531 (+ uncommitted changes)"
+    },
+    {
+      "date": "2026-06-13 12:11 UTC",
+      "title": "F-00007 meyda power-of-2",
+      "done": "MeydaDetector.process guards on isPowerOfTwo(pcmChunk.length); skips trailing partial chunks that would make Meyda.extract throw 'Buffer size must be a power of 2'. Returns null, no history mutation. Test added.",
+      "verified": "pass (2026-06-13 12:11 UTC @ 7205efb)",
+      "blockers": "none",
+      "commit": "7205efb (+ uncommitted changes)"
+    },
+    {
+      "date": "2026-06-13 12:12 UTC",
+      "title": "F-00008 ensemble verify-after-meyda",
+      "done": "EnsembleDetector.process wraps each child process() in try/catch; a throwing child (e.g. Meyda) no longer aborts the loop so detectors after it (webaudioPcp) still run and vote. Test added.",
+      "verified": "pass (2026-06-13 12:12 UTC @ 0aab459)",
+      "blockers": "none",
+      "commit": "0aab459 (+ uncommitted changes)"
+    },
+    {
+      "date": "2026-06-13 12:21 UTC",
+      "title": "F-00009 webaudioPcp dominant",
+      "done": "frequencyDataToPcp h=1 self-vote now weighted by selfHarmonicWeight (default 0.3, was implicit 1) so overtone bins (notably a note's strong 3rd partial = the fifth) stop over-crediting the relative dominant; folded sub-harmonics give genuine fundamentals the edge. c_major now settles C major (was G). Streaming regression test (abc-synth) + mechanism test added.",
+      "verified": "pass (2026-06-13 12:21 UTC @ 44b8470)",
+      "blockers": "none",
+      "commit": "44b8470 (+ uncommitted changes)"
     }
   ],
   "rules": [

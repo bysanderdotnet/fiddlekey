@@ -50,6 +50,17 @@ describe('MeydaDetector', () => {
     expect(result.chroma).toHaveLength(12);
   });
 
+  it('process() skips non-power-of-2 chunks without throwing', async () => {
+    await detector.init(44100, 4096);
+    detector.lastSendTime = Date.now() - 600;
+
+    // A trailing partial chunk (not a power of 2) must not reach Meyda.extract.
+    const partial = new Float32Array(2752).fill(0.1);
+    expect(() => detector.process(partial)).not.toThrow();
+    expect(detector.process(partial)).toBeNull();
+    expect(detector.chromaHistory.length).toBe(0);
+  });
+
   it('resetHistory() should clear history and smoother', async () => {
     await detector.init(44100, 4096);
     detector.chromaHistory.push(new Array(12).fill(0));

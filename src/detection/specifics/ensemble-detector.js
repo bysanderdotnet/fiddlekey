@@ -67,7 +67,14 @@ export class EnsembleDetector extends KeyDetector {
     if (this.detectors.length === 0) return null;
 
     for (const config of this.detectors) {
-      const result = config.instance.process(pcmChunk);
+      // A misbehaving child detector (e.g. Meyda on a bad buffer) must not abort
+      // the loop — detectors after it in the list still need to run and vote.
+      let result = null;
+      try {
+        result = config.instance.process(pcmChunk);
+      } catch {
+        result = null;
+      }
       if (result) {
         this.latestVotes.set(config.id, buildDetectorVote(result, config.weight));
       }

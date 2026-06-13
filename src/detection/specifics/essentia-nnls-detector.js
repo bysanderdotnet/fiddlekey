@@ -13,6 +13,15 @@
  * the same NNLSChroma pipeline with Essentia's documented linear spectral
  * mapping mode so the benchmark still exercises this detector instead of
  * skipping it.
+ *
+ * Per-frame Windowing+Spectrum+LogSpectrum at FRAME_SIZE=16384 is the dominant
+ * cost (~hundreds of ms/frame). The rolling window holds ~79 such frames, so
+ * re-extracting the whole window every ANALYSIS_INTERVAL_MS was O(n^2) and could
+ * take tens of seconds per analysis. Each frame's log-spectrum is now cached by
+ * absolute sample offset and computed exactly once; a per-analysis wall-clock
+ * budget (analysisBudgetMs) caps how many new frames are computed in one pass so
+ * a single analysis can never blow the time budget — remaining frames fill in on
+ * later analyses.
  */
 import { getAveragedChroma } from '../../utils/chroma.js';
 import { KeyDetector } from '../detector.js';
@@ -22,6 +31,7 @@ import { KeySmoother } from '../../utils/smoothing.js';
 import { detectKey, rotate } from '../profile-matching.js';
 
 const ANALYSIS_INTERVAL_MS = 500;
+const ANALYSIS_BUDGET_MS = 1500;
 const ANALYSIS_WINDOW_SECONDS = 4;
 const BINS_PER_SEMITONE = 3;
 const CHROMA_NORMALIZATION = 'maximum';
@@ -42,6 +52,9 @@ export class KeyEssentiaNNLSDetector extends KeyDetector {
     this.bufferSize = 4096;
     this.audioHistory = [];
     this.historySampleCount = 0;
+    this.totalSamples = 0;
+    this.frameCache = new Map();
+    this.analysisBudgetMs = ANALYSIS_BUDGET_MS;
     this.maxHistorySamples = ANALYSIS_WINDOW_SECONDS * this.sampleRate;
     this.lastSendTime = 0;
     this.smoother = new KeySmoother(5);
@@ -91,6 +104,8 @@ export class KeyEssentiaNNLSDetector extends KeyDetector {
   resetHistory() {
     this.audioHistory = [];
     this.historySampleCount = 0;
+    this.totalSamples = 0;
+    this.frameCache.clear();
     this.lastSendTime = 0;
     this.smoother.clear();
   }
@@ -105,6 +120,7 @@ export class KeyEssentiaNNLSDetector extends KeyDetector {
     const chunk = new Float32Array(pcmChunk);
     this.audioHistory.push(chunk);
     this.historySampleCount += chunk.length;
+    this.totalSamples += chunk.length;
 
     while (this.historySampleCount > this.maxHistorySamples && this.audioHistory.length > 1) {
       const removed = this.audioHistory.shift();
@@ -132,37 +148,43 @@ export class KeyEssentiaNNLSDetector extends KeyDetector {
   }
 
   extractNnlsChroma(audio) {
+    const windowStart = this.totalSamples - audio.length;
+    this.evictStaleFrames(windowStart);
+
+    const offsets = this.cacheWindowFrames(audio, windowStart);
+    if (offsets.length === 0) {
+      return null;
+    }
+
     const logSpectrogram = new this.module.VectorVectorFloat();
-    const logSpectrumVectors = [];
-    let latestMeanTuning = null;
+    const frameVectors = [];
+    let meanTuningVector = null;
     let nnlsResult = null;
     let fallbackResult = null;
 
     try {
-      for (let offset = 0; offset + FRAME_SIZE <= audio.length; offset += HOP_SIZE) {
-        const frame = audio.subarray(offset, offset + FRAME_SIZE);
-        const frameVectors = this.extractLogSpectrumFrame(frame);
-
-        logSpectrogram.push_back(frameVectors.logFreqSpectrum);
-        logSpectrumVectors.push(frameVectors.logFreqSpectrum);
-
-        if (latestMeanTuning) {
-          latestMeanTuning.delete();
-        }
-        latestMeanTuning = frameVectors.meanTuning;
+      let latestMeanTuning = null;
+      for (const offset of offsets) {
+        const cached = this.frameCache.get(offset);
+        const vector = this.essentia.arrayToVector(Float32Array.from(cached.logFreqSpectrum));
+        frameVectors.push(vector);
+        logSpectrogram.push_back(vector);
+        latestMeanTuning = cached.meanTuning;
       }
 
       if (logSpectrogram.size() === 0 || !latestMeanTuning) {
         return null;
       }
 
-      nnlsResult = this.runNnlsChroma(logSpectrogram, latestMeanTuning, true);
+      meanTuningVector = this.essentia.arrayToVector(Float32Array.from(latestMeanTuning));
+
+      nnlsResult = this.runNnlsChroma(logSpectrogram, meanTuningVector, true);
       let chroma = accumulateChromagram(this.essentia, nnlsResult.chromagram);
 
       if (!hasEnergy(chroma)) {
         safeDeleteNnlsResult(nnlsResult);
         nnlsResult = null;
-        fallbackResult = this.runNnlsChroma(logSpectrogram, latestMeanTuning, false);
+        fallbackResult = this.runNnlsChroma(logSpectrogram, meanTuningVector, false);
         chroma = accumulateChromagram(this.essentia, fallbackResult.chromagram);
       }
 
@@ -178,23 +200,57 @@ export class KeyEssentiaNNLSDetector extends KeyDetector {
     } finally {
       safeDeleteNnlsResult(nnlsResult);
       safeDeleteNnlsResult(fallbackResult);
-      for (const vector of logSpectrumVectors) {
+      for (const vector of frameVectors) {
         safeDelete(vector);
       }
-      safeDelete(latestMeanTuning);
+      safeDelete(meanTuningVector);
       safeDelete(logSpectrogram);
     }
   }
 
-  extractLogSpectrumFrame(frame) {
+  /**
+   * Returns the absolute frame offsets (HOP_SIZE-aligned) that fully fit in the
+   * current window, computing and caching any not yet seen. New-frame work in a
+   * single call is bounded by analysisBudgetMs (at least one new frame always
+   * progresses); the rest fill in on later analyses.
+   */
+  cacheWindowFrames(audio, windowStart) {
+    const firstOffset = Math.ceil(windowStart / HOP_SIZE) * HOP_SIZE;
+    const needed = [];
+    for (let abs = firstOffset; abs + FRAME_SIZE <= this.totalSamples; abs += HOP_SIZE) {
+      needed.push(abs);
+    }
+
+    const startTime = Date.now();
+    let computed = 0;
+    for (const abs of needed) {
+      if (this.frameCache.has(abs)) continue;
+      if (computed > 0 && Date.now() - startTime > this.analysisBudgetMs) break;
+
+      const rel = abs - windowStart;
+      this.frameCache.set(abs, this.computeFrameSpectrum(audio.subarray(rel, rel + FRAME_SIZE)));
+      computed++;
+    }
+
+    return needed.filter(abs => this.frameCache.has(abs));
+  }
+
+  evictStaleFrames(windowStart) {
+    for (const key of this.frameCache.keys()) {
+      if (key < windowStart) this.frameCache.delete(key);
+    }
+  }
+
+  computeFrameSpectrum(frame) {
     const inputVector = this.essentia.arrayToVector(frame);
     let windowed = null;
     let spectrum = null;
+    let logSpectrum = null;
 
     try {
       windowed = this.essentia.Windowing(inputVector, false, FRAME_SIZE, WINDOW_TYPE);
       spectrum = this.essentia.Spectrum(windowed.frame, FRAME_SIZE);
-      const logSpectrum = this.essentia.LogSpectrum(
+      logSpectrum = this.essentia.LogSpectrum(
         spectrum.spectrum,
         BINS_PER_SEMITONE,
         FRAME_SIZE,
@@ -203,13 +259,15 @@ export class KeyEssentiaNNLSDetector extends KeyDetector {
       );
 
       return {
-        logFreqSpectrum: logSpectrum.logFreqSpectrum,
-        meanTuning: logSpectrum.meanTuning
+        logFreqSpectrum: Array.from(this.essentia.vectorToArray(logSpectrum.logFreqSpectrum)),
+        meanTuning: Array.from(this.essentia.vectorToArray(logSpectrum.meanTuning))
       };
     } finally {
       safeDelete(inputVector);
       safeDelete(windowed?.frame);
       safeDelete(spectrum?.spectrum);
+      safeDelete(logSpectrum?.logFreqSpectrum);
+      safeDelete(logSpectrum?.meanTuning);
     }
   }
 
