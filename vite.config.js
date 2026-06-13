@@ -62,7 +62,24 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,wasm}'],
         // Essentia's WASM runtime is several MB; raise the precache limit so it works offline.
-        maximumFileSizeToCacheInBytes: 16 * 1024 * 1024
+        maximumFileSizeToCacheInBytes: 16 * 1024 * 1024,
+        runtimeCaching: [
+          {
+            // Large ONNX models on R2 are immutable. Cache durably in Cache
+            // Storage so they download once, then serve from cache on repeat
+            // visits and offline. Only successful CORS responses (200) are
+            // cached — opaque cross-origin responses can't be read by the
+            // detector anyway, so R2 must send Access-Control-Allow-Origin
+            // (see README "Large assets: Cloudflare R2").
+            urlPattern: new RegExp(`^${R2_BASE_URL.replace(/[.]/g, '\\.')}/.*\\.onnx$`, 'i'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'fiddlekey-r2-models',
+              expiration: { maxEntries: 8, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [200] }
+            }
+          }
+        ]
       }
     })
   ]

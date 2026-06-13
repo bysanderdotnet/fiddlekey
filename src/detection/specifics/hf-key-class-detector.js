@@ -16,6 +16,7 @@
  * HFKeyClassNonQuantizedDetector uses the full-precision float32 model (459 MB).
  */
 import { getAveragedChroma } from '../../utils/chroma.js';
+import { fetchArrayBufferWithProgress } from '../../utils/fetch-progress.js';
 import { KeyDetector } from '../detector.js';
 import { configureOnnxRuntime } from '../onnx-runtime.js';
 import { scoreKeyCandidates } from '../profile-matching.js';
@@ -55,7 +56,7 @@ export class HFKeyClassDetector extends KeyDetector {
     this.sessionFactory = options.sessionFactory ?? null;
   }
 
-  async init(sampleRate, bufferSize) {
+  async init(sampleRate, bufferSize, onProgress) {
     this.sampleRate = sampleRate;
     this.bufferSize = bufferSize;
     this.maxHistorySamples = Math.ceil(ANALYSIS_WINDOW_SECONDS * sampleRate);
@@ -67,9 +68,7 @@ export class HFKeyClassDetector extends KeyDetector {
     if (this.sessionFactory) {
       this.session = await this.sessionFactory(this.ort);
     } else {
-      const response = await fetch(this.modelPath);
-      if (!response.ok) throw new Error(`Failed to load model from ${this.modelPath}: ${response.status}`);
-      const modelBytes = await response.arrayBuffer();
+      const modelBytes = await fetchArrayBufferWithProgress(this.modelPath, onProgress);
       this.session = await this.ort.InferenceSession.create(modelBytes, {
         executionProviders: ['wasm'],
         graphOptimizationLevel: 'all'

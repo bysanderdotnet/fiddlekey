@@ -36,6 +36,12 @@ export async function startAudio(options = {}) {
       { type: 'module' }
     );
 
+    // Attach the message handler before init so early download_progress /
+    // detector_ready messages are never missed.
+    if (typeof options.onMessage === 'function') {
+      worker.onmessage = options.onMessage;
+    }
+
     worker.postMessage({
       type: 'init',
       detectorId: options.detectorId || 'essentia',

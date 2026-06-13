@@ -34,7 +34,9 @@ self.onmessage = async (event) => {
 
     try {
       detector = await createDetector(detectorId);
-      await detector.init(sampleRate, bufferSize);
+      await detector.init(sampleRate, bufferSize, ({ loaded, total }) => {
+        self.postMessage({ type: 'download_progress', detectorId, loaded, total });
+      });
 
       console.log(`[Worker] Initialized detector '${detectorId}' with sampleRate: ${sampleRate}, bufferSize: ${bufferSize}`);
       self.postMessage({ type: 'detector_ready', detectorId });

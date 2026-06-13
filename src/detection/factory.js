@@ -4,6 +4,12 @@
  * page iterates this registry to compare detectors against the ABC fixtures.
  */
 
+// Large models live on Cloudflare R2 (see README + r2-assets.json). Listed here
+// so the app can prefetch the selected detector's model before the user hits
+// "Detect key". Runtime WASM (essentia, onnxruntime-web) ships in the build and
+// is precached by the service worker, so it needs no R2 prefetch.
+const MODEL_BASE_URL = __MODEL_BASE_URL__;
+
 export const DETECTORS = {
   essentia: {
     id: 'essentia',
@@ -48,11 +54,13 @@ export const DETECTORS = {
   hfKeyClass: {
     id: 'hfKeyClass',
     label: 'HF Key Class CNN (jcarbonnell)',
+    assetUrls: [`${MODEL_BASE_URL}/models/hf-key-class-int8.onnx`],
     loadDetectorClass: async () => (await import('./specifics/hf-key-class-detector.js')).HFKeyClassDetector
   },
   hfKeyClassNonQuantized: {
     id: 'hfKeyClassNonQuantized',
     label: 'HF Key Class CNN nonquantized (jcarbonnell)',
+    assetUrls: [`${MODEL_BASE_URL}/models/hf-key-class-nonquantized.onnx`],
     loadDetectorClass: async () => (await import('./specifics/hf-key-class-detector.js')).HFKeyClassNonQuantizedDetector
   }
 };
@@ -65,6 +73,17 @@ export function getDetectorOptions() {
 
 export function getDetectorIds() {
   return getDetectorOptions().map(({ id }) => id);
+}
+
+/**
+ * URLs of large remote assets (R2 models) a detector needs at runtime. Used to
+ * prefetch before the user starts detection. Empty for detectors with no
+ * remote assets.
+ * @param {string} id
+ * @returns {string[]}
+ */
+export function getDetectorAssetUrls(id) {
+  return DETECTORS[id]?.assetUrls ?? [];
 }
 
 /**
