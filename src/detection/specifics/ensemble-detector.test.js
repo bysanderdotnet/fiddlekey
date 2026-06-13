@@ -46,6 +46,32 @@ describe('EnsembleDetector', () => {
     vi.restoreAllMocks();
   });
 
+  it('keeps voting when a child detector throws', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(1000);
+    const throwing = new StubDetector(null);
+    throwing.process = vi.fn(() => {
+      throw new Error('Buffer size must be a power of 2');
+    });
+    const after = new StubDetector({ tonic: 'D', mode: MODES.MAJOR, confidence: 0.8, score: 0.9 });
+    const detector = new EnsembleDetector({
+      emitIntervalMs: 0,
+      detectorConfigs: [
+        { id: 'throwing', label: 'Throwing', weight: 1, create: () => throwing },
+        { id: 'after', label: 'After', weight: 1, create: () => after }
+      ]
+    });
+
+    await detector.init(44100, 4096);
+    let result;
+    expect(() => { result = detector.process(new Float32Array(4096)); }).not.toThrow();
+
+    expect(throwing.process).toHaveBeenCalledOnce();
+    expect(after.process).toHaveBeenCalledOnce();
+    expect(result.tonic).toBe('D');
+    expect(result.ensemble.detectorCount).toBe(1);
+    vi.restoreAllMocks();
+  });
+
   it('applies the ITM repertoire prior when votes are otherwise tied', () => {
     const result = combineVotes([
       {

@@ -83,7 +83,7 @@
     {
       "id": "F-00008",
       "title": "ensemble verify-after-meyda",
-      "status": "todo",
+      "status": "done",
       "notes": "Child detector throwing (e.g. Meyda) aborts ensemble loop, skipping detectors after it (webaudioPcp). Wrap each child process() in try/catch so others still run."
     },
     {
@@ -165,6 +165,14 @@
       "verified": "pass (2026-06-13 12:11 UTC @ 7205efb)",
       "blockers": "none",
       "commit": "7205efb (+ uncommitted changes)"
+    },
+    {
+      "date": "2026-06-13 12:12 UTC",
+      "title": "F-00008 ensemble verify-after-meyda",
+      "done": "EnsembleDetector.process wraps each child process() in try/catch; a throwing child (e.g. Meyda) no longer aborts the loop so detectors after it (webaudioPcp) still run and vote. Test added.",
+      "verified": "pass (2026-06-13 12:12 UTC @ 0aab459)",
+      "blockers": "none",
+      "commit": "0aab459 (+ uncommitted changes)"
     }
   ],
   "rules": [
