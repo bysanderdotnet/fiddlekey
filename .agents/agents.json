@@ -77,7 +77,7 @@
     {
       "id": "F-00007",
       "title": "meyda power-of-2",
-      "status": "todo",
+      "status": "done",
       "notes": "Final partial PCM chunk not power-of-2 -> Meyda.extract throws 'Buffer size must be a power of 2'. Guard: skip non-power-of-2 chunks."
     },
     {
@@ -157,6 +157,14 @@
       "verified": "pass (2026-06-13 12:10 UTC @ c806531)",
       "blockers": "none",
       "commit": "c806531 (+ uncommitted changes)"
+    },
+    {
+      "date": "2026-06-13 12:11 UTC",
+      "title": "F-00007 meyda power-of-2",
+      "done": "MeydaDetector.process guards on isPowerOfTwo(pcmChunk.length); skips trailing partial chunks that would make Meyda.extract throw 'Buffer size must be a power of 2'. Returns null, no history mutation. Test added.",
+      "verified": "pass (2026-06-13 12:11 UTC @ 7205efb)",
+      "blockers": "none",
+      "commit": "7205efb (+ uncommitted changes)"
     }
   ],
   "rules": [

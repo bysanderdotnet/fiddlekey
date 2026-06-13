@@ -36,6 +36,13 @@ export class MeydaDetector extends KeyDetector {
   }
 
   process(pcmChunk) {
+    // Meyda's FFT requires a power-of-2 buffer; the final partial PCM chunk of a
+    // stream isn't, and Meyda.extract throws 'Buffer size must be a power of 2'.
+    // Skip those chunks — they're a small tail and don't affect the result.
+    if (!pcmChunk || !isPowerOfTwo(pcmChunk.length)) {
+      return null;
+    }
+
     // 1. Extract chroma using Meyda
     // Note: Meyda extract returns { chroma: [12 values] }
     // It works best with arrays, but float32array also works usually.
@@ -90,4 +97,8 @@ export class MeydaDetector extends KeyDetector {
   destroy() {
     this.resetHistory();
   }
+}
+
+function isPowerOfTwo(value) {
+  return Number.isInteger(value) && value > 0 && (value & (value - 1)) === 0;
 }
