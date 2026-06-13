@@ -67,6 +67,30 @@
       "title": "CI toolchain for verify",
       "status": "blocked",
       "notes": "Needs human: .github/workflows/agents.yml is human-owned; add setup-node + npm ci + npx playwright install chromium --with-deps before ./AGENTS.sh ci."
+    },
+    {
+      "id": "F-00006",
+      "title": "Fix essentiaNnls timeout (>120s, never completes)",
+      "status": "todo",
+      "notes": "Benchmark: TIMEOUT for any clip (>=6s exceeds 120s budget). Root cause: per-frame Essentia Windowing+Spectrum+LogSpectrum at FRAME_SIZE=16384 costs ~350ms/frame; detector re-extracts the ENTIRE ~79-frame window (HOP_SIZE=2048, ANALYSIS_WINDOW_SECONDS=4) every ANALYSIS_INTERVAL_MS=500 -> O(n^2) recompute, ~28s per analysis. Even perfectly incremental, ~646 unique frames over a 30s clip x 350ms = ~226s, still over budget -> frame cost itself must drop. Secondary bug: NNLSChroma useNNLS=true pass returns empty EVERY time (fellBack=true always), and the linear-fallback result is WRONG (G major on c_major). Fix: (1) incremental per-frame log-spectrum cache (no full-window recompute); (2) lighter frame params (smaller FRAME_SIZE / larger HOP) to get under 120s; (3) investigate why NNLS mode yields all-zero chroma + why result lands on dominant. Re-benchmark after. File: src/detection/specifics/essentia-nnls-detector.js"
+    },
+    {
+      "id": "F-00007",
+      "title": "Fix meyda non-power-of-2 final chunk error",
+      "status": "todo",
+      "notes": "Benchmark: meyda runs and is CORRECT (C major), but logs 'Meyda: Buffer size must be a power of 2'. Cause: runner feeds a final partial PCM chunk (pcm.slice tail, not power of 2); Meyda.bufferSize is pinned to bufferSize=4096 at init, so the short last chunk throws inside Meyda.extract. Caught by worker (non-fatal) so result is unaffected, but it pollutes logs and aborts that chunk's feature. Fix: in MeydaDetector.process, skip/guard chunks whose length != this.bufferSize (or pad). File: src/detection/specifics/meyda-detector.js. NOTE: same warning surfaces via ensemble (F-00008) since it composes meyda."
+    },
+    {
+      "id": "F-00008",
+      "title": "Verify ensemble after meyda fix (inherits power-of-2 error)",
+      "status": "todo",
+      "notes": "Benchmark: ensemble runs and is CORRECT (C major) but emits the same 'Meyda: Buffer size must be a power of 2' warning because it composes MeydaDetector. Likely resolved by F-00007. Task: after F-00007, re-run benchmark for ensemble, confirm no warning and accuracy unchanged. If ensemble instantiates/feeds meyda differently than the standalone detector, apply the same non-power-of-2 guard at the ensemble feed site. File: src/detection/specifics/ensemble-detector.js"
+    },
+    {
+      "id": "F-00009",
+      "title": "Fix webaudioPcp detecting dominant (G major on c_major)",
+      "status": "todo",
+      "notes": "Benchmark: webaudioPcp RUNS (27 updates, fast) but returns WRONG key: G major on c_major (firstCorrectMs=557 then drifts to dominant by end; final=G major, correct=false). Not a crash -> accuracy bug. Hypothesis: PCP/harmonic weighting over-weights the dominant (G is the 5th of C; strong harmonic overlap), or profile-matching/rotation picks relative dominant. Compare against essentia HPCP (correct) on same audio. Task: dump averaged chroma + profile-match scores for c_major, find why G outranks C; check harmonic summation (overtones of C reinforce G) and profile correlation. Re-benchmark across all 9 tunes after, not just c_major. File: src/detection/specifics/webaudio-pcp-detector.js (+ src/detection/profile-matching.js)"
     }
   ],
   "progress": [
