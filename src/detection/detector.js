@@ -9,9 +9,11 @@ export class KeyDetector {
    * Initialize any required libraries, wasm, or internal state.
    * @param {number} sampleRate
    * @param {number} bufferSize
+   * @param {(progress: { loaded: number, total: number }) => void} [onProgress]
+   *   Optional callback invoked while large assets (e.g. R2 models) download.
    * @returns {Promise<void>}
    */
-  async init(sampleRate, bufferSize) {
+  async init(sampleRate, bufferSize, onProgress) {
     throw new Error('Method "init()" must be implemented.');
   }
 

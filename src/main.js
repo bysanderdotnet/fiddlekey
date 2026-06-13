@@ -2,7 +2,7 @@ import { startAudio, stopAudio } from './audio/capture.js';
 import { updateKeyDisplay } from './ui/key-display.js';
 import { updateNotesDisplay } from './ui/notes-display.js';
 import { updateFingerboard } from './ui/fingerboard.js';
-import { DEFAULT_DETECTOR_ID, getDetectorOptions } from './detection/factory.js';
+import { DEFAULT_DETECTOR_ID, getDetectorOptions, getDetectorAssetUrls } from './detection/factory.js';
 
 console.log('Fiddlekey app started');
 
@@ -52,7 +52,23 @@ function initDetectorSettings() {
 
   detectorSelect.addEventListener('change', () => {
     localStorage.setItem('fiddlekey_detector_id', detectorSelect.value);
+    prefetchDetectorAssets(detectorSelect.value);
   });
+}
+
+// Warm the browser cache with the selected detector's large R2 model so the
+// download is (often) already done by the time the user hits "Detect key".
+// Runtime WASM ships in the build and is precached by the service worker.
+function prefetchDetectorAssets(detectorId) {
+  for (const url of getDetectorAssetUrls(detectorId)) {
+    if (document.head.querySelector(`link[rel="prefetch"][href="${url}"]`)) continue;
+    const link = document.createElement('link');
+    link.rel = 'prefetch';
+    link.as = 'fetch';
+    link.href = url;
+    link.crossOrigin = 'anonymous';
+    document.head.appendChild(link);
+  }
 }
 
 function getSelectedDetectorId() {
@@ -60,6 +76,7 @@ function getSelectedDetectorId() {
 }
 
 initDetectorSettings();
+prefetchDetectorAssets(getSelectedDetectorId());
 
 // --- PWA Installation ---
 window.addEventListener('beforeinstallprompt', (e) => {
@@ -115,7 +132,8 @@ async function detectKey() {
     setAnalyzingUI(true, 'Initializing...');
 
     const audioState = await startAudio({
-      detectorId: getSelectedDetectorId()
+      detectorId: getSelectedDetectorId(),
+      onMessage: handleWorkerMessage
     });
     isAnalyzing = true;
 
@@ -124,28 +142,8 @@ async function detectKey() {
       await audioState.audioContext.resume();
     }
 
-    setAnalyzingUI(true, 'Analyzing...');
-
-    audioState.worker.onmessage = async (event) => {
-      const data = event.data;
-
-      if (data.type === 'detection_update') {
-        if (data.detection) {
-          bestDetection = data.detection;
-          window.dispatchEvent(new CustomEvent('fiddlekey:detection', { detail: data.detection }));
-
-          if ((data.audioProcessedMs ?? 0) >= MIN_SETTLED_AUDIO_MS) {
-            await showSettledKey(bestDetection);
-          }
-        }
-      } else if (data.type === 'detector_error') {
-        if (errorMessage) {
-          errorMessage.textContent = `Error: Failed to initialize detector ${data.detectorId}: ${data.message || 'Unknown error'}.`;
-        }
-        await resetAnalysisState({ clearResults: true });
-      }
-    };
-
+    // UI advances on worker events: download_progress -> detector_ready
+    // (Analyzing...) -> detection_update. Until then it shows "Initializing...".
     console.log('Audio pipeline active');
   } catch (error) {
     console.error('Permission denied or error:', error);
@@ -155,6 +153,30 @@ async function detectKey() {
     if (errorMessage) {
       errorMessage.textContent = 'Error: Microphone access is required. Please check your browser permissions.';
     }
+  }
+}
+
+async function handleWorkerMessage(event) {
+  const data = event.data;
+
+  if (data.type === 'download_progress') {
+    setDownloadingUI(data.loaded, data.total);
+  } else if (data.type === 'detector_ready') {
+    setAnalyzingUI(true, 'Analyzing...');
+  } else if (data.type === 'detection_update') {
+    if (data.detection) {
+      bestDetection = data.detection;
+      window.dispatchEvent(new CustomEvent('fiddlekey:detection', { detail: data.detection }));
+
+      if ((data.audioProcessedMs ?? 0) >= MIN_SETTLED_AUDIO_MS) {
+        await showSettledKey(bestDetection);
+      }
+    }
+  } else if (data.type === 'detector_error') {
+    if (errorMessage) {
+      errorMessage.textContent = `Error: Failed to initialize detector ${data.detectorId}: ${data.message || 'Unknown error'}.`;
+    }
+    await resetAnalysisState({ clearResults: true });
   }
 }
 
@@ -184,10 +206,49 @@ async function resetAnalysisState({ clearResults }) {
   }
 }
 
+function setDownloadingUI(loaded, total) {
+  const pct = total > 0 ? Math.min(100, Math.round((loaded / total) * 100)) : null;
+  const loadedMb = (loaded / (1024 * 1024)).toFixed(1);
+  const totalMb = total > 0 ? (total / (1024 * 1024)).toFixed(1) : null;
+
+  if (startButton) {
+    startButton.disabled = true;
+    startButton.textContent = pct !== null ? `Downloading ${pct}%` : 'Downloading…';
+  }
+  if (detectorSelect) detectorSelect.disabled = true;
+
+  if (!keyDisplayContainer) return;
+
+  // Downloading, not yet listening to the mic for a key.
+  keyDisplayContainer.classList.add('is-analyzing');
+  keyDisplayContainer.classList.remove('is-listening');
+
+  const keyBadge = keyDisplayContainer.querySelector('.key-badge');
+  const status = keyDisplayContainer.querySelector('.analysis-status');
+  const confidenceBar = keyDisplayContainer.querySelector('.confidence-fill');
+
+  if (keyBadge) keyBadge.textContent = 'Downloading…';
+  if (status) {
+    status.textContent = totalMb
+      ? `Downloading detector model… ${loadedMb} / ${totalMb} MB`
+      : `Downloading detector model… ${loadedMb} MB`;
+  }
+  if (confidenceBar) {
+    if (pct !== null) {
+      // Determinate progress bar.
+      confidenceBar.style.width = `${pct}%`;
+      confidenceBar.className = 'confidence-fill status-high';
+    } else {
+      confidenceBar.style.width = '100%';
+      confidenceBar.className = 'confidence-fill status-analyzing';
+    }
+  }
+}
+
 function setAnalyzingUI(analyzing, text = '') {
   if (startButton) {
     startButton.disabled = analyzing;
-    startButton.textContent = analyzing ? text : 'Detect key';
+    startButton.textContent = analyzing ? (text || 'Analyzing...') : 'Detect key';
   }
 
   if (detectorSelect) {
