@@ -95,7 +95,7 @@
     {
       "id": "F-00010",
       "title": "Note-safety core (IMPLEMENTATION.md Phase 1)",
-      "status": "todo",
+      "status": "done",
       "notes": "IMPLEMENTATION.md Phase 1. New: src/theory/note-safety.js (computeNoteSafety: candidates+observedChroma -> status/safe/careful/avoid/ambiguity/debug), src/detection/note-safety-aggregator.js (detectionToNoteSafety + getCandidatesFromDetection fallback for old {tonic,mode}), tests/note-safety.test.js (7 cases). No UI. Templates major/minor + shadow set; thresholds safe>=0.68 careful>=0.32."
     },
     {
@@ -211,6 +211,15 @@
       "verified": "pass (2026-06-13 12:21 UTC @ 44b8470)",
       "blockers": "none",
       "commit": "44b8470 (+ uncommitted changes)"
+    },
+    {
+      "date": "2026-06-14 17:22 UTC",
+      "title": "F-00010 note-safety core",
+      "done": "Phase 1 (IMPLEMENTATION.md). New src/theory/note-safety.js: computeNoteSafety(candidates+observedChroma)->{status,safe,careful,avoid,ambiguity,debug}. Internal major/minor+shadow templates (never UI), DEGREE_WEIGHTS, anchor/pentatonic/shadow/chroma bonuses. Score = weighted template support / theoretical-max (rewards candidate agreement) * confidence(top score) + small chroma bonus; thresholds safe>=0.68 careful>=0.32. Ambiguity = chromatic-neighbour 'which version' pairs (both scale tones, mutually exclusive across candidates, close score) -> careful + flagged (C/C# in D/G/Bm). New src/detection/note-safety-aggregator.js: detectionToNoteSafety + getCandidatesFromDetection legacy {tonic,mode,alternate} fallback. Tests: src/theory/note-safety.test.js, 7 scoped cases + note-helper + aggregator. No UI.",
+      "verified": "pass (2026-06-14 17:21 UTC @ b51e187)",
+      "next": "Phase 2: profile-matching detectKeyCandidates(); attach candidates in essentia/webaudio-pcp/meyda/essentia-nnls/ensemble detectors.",
+      "blockers": "none",
+      "commit": "b51e187 (+ uncommitted changes)"
     }
   ],
   "rules": [
