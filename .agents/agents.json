@@ -107,7 +107,7 @@
     {
       "id": "F-00012",
       "title": "Note-safety UI (IMPLEMENTATION.md Phase 3)",
-      "status": "todo",
+      "status": "done",
       "notes": "IMPLEMENTATION.md Phase 3. src/main.js: detectionToNoteSafety(detection) -> updateNotesDisplay/updateFingerboard; key-display debug/status only. Rewrite src/ui/notes-display.js (safe/careful/avoid chips). src/ui/fingerboard.js colour: safe=green, careful=white, avoid/very-unsure=hidden. src/ui/key-display.js -> status badge. UI must not need tonic/mode. Needs F-00010."
     },
     {
@@ -229,6 +229,15 @@
       "next": "Phase 3: replace notes UI (main.js, notes-display.js, fingerboard.js, key-display.js) to render safe/careful from detectionToNoteSafety, drop tonic/mode dependency.",
       "blockers": "none",
       "commit": "8a87f60 (+ uncommitted changes)"
+    },
+    {
+      "date": "2026-06-14 20:27 UTC",
+      "title": "F-00012 note-safety UI",
+      "done": "Phase 3 (IMPLEMENTATION.md). main.js showSettledKey->showSettledNotes: detectionToNoteSafety(detection) once, passed to updateNotesDisplay/updateFingerboard/updateKeyDisplay. notes-display.js rewritten: safe/careful chip sections + ambiguity 'X / Y unclear' lines, no tonic/mode. fingerboard.js: colour by safety class (safe=green, careful=white, avoid=not drawn). key-display.js: status badge ('Safe notes found'/'Unclear'/'Still listening') + confidence from debug, never 'D major'. CSS: .note-chip.safe/.careful/.ambiguous + .notes-section/.notes-label/.ambiguity-line. index.html onboarding copy note-focused.",
+      "verified": "pass (2026-06-14 20:27 UTC @ 40ca465)",
+      "next": "Phase 4: benchmark note-safety metrics (runner.js, benchmark/ui.js, abc/metadata.json, tests/benchmark.spec.js).",
+      "blockers": "none",
+      "commit": "40ca465 (+ uncommitted changes)"
     }
   ],
   "rules": [
