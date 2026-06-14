@@ -485,12 +485,22 @@ Expected input:
 }
 ```
 
+Colour code (safety class → fingerboard dot colour):
+
+- safe → **green** (strongest highlight)
+- careful / unsure → **white** (weaker highlight)
+- avoid / very unsure → **not drawn at all** (hidden)
+
 Render rules:
 
-- safe notes: strongest highlight
-- careful notes: weaker highlight
-- avoid notes: hidden or muted
+- safe notes: green, strongest highlight
+- careful notes: white, weaker highlight
+- avoid notes and anything we are very unsure about: do not draw the dot —
+  leave the position blank rather than guess
 - if no safe notes: clear fingerboard or show listening state
+
+The fingerboard must never show a coloured dot for a note we are very unsure
+about. A blank position is better than a wrong-but-confident one.
 
 ### Update `src/ui/key-display.js`
 

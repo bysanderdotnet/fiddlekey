@@ -1,18 +1,30 @@
 # Fiddlekey 🎻
 
-**A web app that automatically detects the key of a jam session.**
+**A web app that tells you which notes are safe to play in a jam session.**
 
-Fiddlekey listens to the music being played around you and instantly tells you:
-- what **key** the tune is in — the tonic plus **major or minor**, nothing fancier
-- which **notes are safe to play**
-- where to **put your fingers** on the violin
+Fiddlekey listens to the music being played around you and answers the one
+question a player actually has: **which notes can I play right now without
+clashing?**
 
-No sheet music required. No internet required. Just open it on your phone and start playing.
+- 🟢 **Safe notes** — play these freely
+- ⚪ **Careful notes** — usable, but listen first (shown in white)
+- where to **put your fingers** on the violin, colour-coded by safety
+
+No sheet music required. No internet required. No music theory required — you
+do **not** need to know or care whether the tune is "D major". Just open it on
+your phone and start playing.
+
+> **Pivot in progress.** Fiddlekey used to lead with a *key* label (tonic +
+> major/minor). It now leads with **safe notes**: the key is computed
+> internally as an engine detail and is debug-only. See
+> [`IMPLEMENTATION.md`](IMPLEMENTATION.md) for the migration plan and
+> `./AGENTS.sh feature list` for the tracked phases.
 
 Fiddlekey is the successor of [Bourdon](https://github.com/bysanderdotnet/bourdon).
 Bourdon tried to detect full church modes (Dorian, Mixolydian, ...) and grew too
 complex. Fiddlekey keeps the good parts — the audio pipeline and the swappable
-detectors — and deliberately limits detection to **tonic + major/minor**.
+detectors — limits the engine to **tonic + major/minor**, and turns that into a
+ranked set of **safe notes** rather than a theory label.
 
 ---
 
@@ -20,8 +32,9 @@ detectors — and deliberately limits detection to **tonic + major/minor**.
 
 Folk jam sessions are intimidating for beginners. There is no conductor, no sheet
 music handed out, and tunes start without warning. The hardest part is not playing
-the notes — it is knowing *which* notes are safe, and in *what key* the tune is
-running. Once you have that, your ear can do the rest.
+the notes — it is knowing *which* notes are safe to join in on. A beginner does
+not need a theory label like "D major"; they need to know what to put their
+fingers on. Once you know which notes are safe, your ear can do the rest.
 
 ---
 
@@ -29,12 +42,13 @@ running. Once you have that, your ear can do the rest.
 
 | Feature | Description |
 |---|---|
-| 🎵 **Key detection** | Detects the tonic and major/minor (D Major, A Minor, ...) from live microphone audio within seconds |
-| 🔁 **Swappable detectors** | Multiple key-detection algorithms behind one `KeyDetector` interface; pick one in Settings |
-| 🟢 **Safe notes** | Shows the pentatonic tones and the full 7-note scale for the detected key |
-| 🖐️ **Finger placement** | SVG violin fingerboard showing string and finger for each safe note, in first position |
+| 🟢 **Safe notes** *(in progress)* | Ranks every note as **safe** (green), **careful** (white), or **avoid** (hidden) from live mic audio — no key label needed. See [`IMPLEMENTATION.md`](IMPLEMENTATION.md) |
+| 🖐️ **Finger placement** | SVG violin fingerboard, first position; each note coloured by safety — green = safe, white = careful, very-unsure notes are left blank |
+| 🤝 **Ambiguity-aware** *(in progress)* | When two notes (e.g. C / C#) are both plausible, both are shown as *careful* instead of guessing — conservative beats overconfident |
+| 🎵 **Key engine** *(debug)* | Tonic + major/minor is still computed internally to feed safe-note scoring; it is no longer the product output and is hidden by default |
+| 🔁 **Swappable detectors** | Multiple detection algorithms behind one `KeyDetector` interface; pick one in Settings |
 | 📱 **Works offline** | Fully client-side PWA — no server, no login, no internet needed at the session |
-| 📊 **Benchmark mode** (planned) | `/benchmark` compares detector accuracy and speed on the ABC test tunes |
+| 📊 **Benchmark mode** | `/benchmark` compares detectors on the ABC test tunes — accuracy, time-to-detect, and (planned) note-safety metrics |
 
 ---
 
@@ -75,14 +89,38 @@ src/detection/specifics/    One file per detector implementation
 src/detection/profile-matching.js
                             Krumhansl-Schmuckler major/minor profiles, Pearson scoring,
                             common-session-key prior — 24 candidates (12 tonics × 2 modes)
-src/theory/                 Scale/pentatonic helpers (tonal.js)
-src/ui/                     Key badge, safe-notes chips, SVG fingerboard
+src/detection/note-safety-aggregator.js   (planned)
+                            Adapts detector output → note safety; falls back to old
+                            { tonic, mode } shape so the UI can migrate first
+src/theory/scale-helper.js  Scale/pentatonic helpers (tonal.js)
+src/theory/note-safety.js   (planned) The pivot core: candidates + chroma → safe/careful/avoid
+src/ui/                     Safety-class note chips + colour-coded SVG fingerboard; status badge
 abc/                        Test tunes in ABC notation, filename = ground-truth key
-tests/                      Playwright e2e (runs against the production build)
+abc/metadata.json           (planned) Expected safe/careful/avoid notes per tune (jam advice)
+tests/                      Vitest units + Playwright e2e (runs against the production build)
 ```
 
-Detection results are plain objects: `{ tonic, mode, score, confidence, alternate, chroma }`
-where `mode` is always `"major"` or `"minor"`.
+**Two layers.** The detection *engine* still emits plain objects
+`{ tonic, mode, score, confidence, alternate, chroma }` where `mode` is always
+`"major"` or `"minor"` — that is an internal/debug detail, not the product
+output. The *product* output is a **note-safety** object from
+`computeNoteSafety()`:
+
+```js
+{
+  status: 'listening' | 'uncertain' | 'usable' | 'stable',
+  safe:    [{ note: 'D', safety: 0.98, reason: 'anchor' }, ...],   // → green
+  careful: [{ note: 'F#', safety: 0.64, reason: 'likely' }, ...],  // → white
+  avoid:   ['F', 'G#', 'A#'],                                      // → hidden
+  ambiguity: [{ notes: ['C', 'C#'], reason: 'both plausible' }],
+  debug:   { candidates: [...], rawDetection: {} }                 // key label lives here
+}
+```
+
+The UI renders `safe` / `careful` / `avoid` and **must not depend on `tonic`
+or `mode`**. Fingerboard colour code: **safe → green, careful → white,
+avoid / very-unsure → not drawn**. Full spec and rollout phases:
+[`IMPLEMENTATION.md`](IMPLEMENTATION.md).
 
 ### Adding a detector
 
@@ -99,6 +137,13 @@ tool for **developing detectors**: after changing a detector, run the benchmark
 to check whether the change actually improved accuracy or time-to-detect — and
 use the per-detector summary table to decide which detector should be the
 default (`DEFAULT_DETECTOR_ID` in `src/detection/factory.js`).
+
+> **Pivot note.** The benchmark currently scores exact key correctness. As part
+> of the note-safety pivot it will also score **note safety** against
+> `abc/metadata.json` (safe-note precision/recall, dangerous-green count,
+> ambiguity handled) — punishing a clashing "safe" note harder than a missed
+> one. Key correctness stays as a debug metric. See [`IMPLEMENTATION.md`](IMPLEMENTATION.md)
+> Phase 4.
 
 How it works:
 

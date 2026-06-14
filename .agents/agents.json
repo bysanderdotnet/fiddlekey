@@ -91,6 +91,36 @@
       "title": "webaudioPcp dominant",
       "status": "done",
       "notes": "Resolves G instead of C (relative dominant). Harmonic self-vote over-credits the fifth. Accuracy fix + unit test."
+    },
+    {
+      "id": "F-00010",
+      "title": "Note-safety core (IMPLEMENTATION.md Phase 1)",
+      "status": "todo",
+      "notes": "IMPLEMENTATION.md Phase 1. New: src/theory/note-safety.js (computeNoteSafety: candidates+observedChroma -> status/safe/careful/avoid/ambiguity/debug), src/detection/note-safety-aggregator.js (detectionToNoteSafety + getCandidatesFromDetection fallback for old {tonic,mode}), tests/note-safety.test.js (7 cases). No UI. Templates major/minor + shadow set; thresholds safe>=0.68 careful>=0.32."
+    },
+    {
+      "id": "F-00011",
+      "title": "Expose detector candidates (IMPLEMENTATION.md Phase 2)",
+      "status": "todo",
+      "notes": "IMPLEMENTATION.md Phase 2. Add detectKeyCandidates() to src/detection/profile-matching.js (keep existing fns). Attach rawDetection.candidates=detectKeyCandidates(avgChroma).slice(0,5) in detectors: essentia, webaudio-pcp, meyda, essentia-nnls, ensemble. Keep interface; old UI still works. Not blocked on HF/ONNX. Feeds F-00010."
+    },
+    {
+      "id": "F-00012",
+      "title": "Note-safety UI (IMPLEMENTATION.md Phase 3)",
+      "status": "todo",
+      "notes": "IMPLEMENTATION.md Phase 3. src/main.js: detectionToNoteSafety(detection) -> updateNotesDisplay/updateFingerboard; key-display debug/status only. Rewrite src/ui/notes-display.js (safe/careful/avoid chips). src/ui/fingerboard.js colour: safe=green, careful=white, avoid/very-unsure=hidden. src/ui/key-display.js -> status badge. UI must not need tonic/mode. Needs F-00010."
+    },
+    {
+      "id": "F-00013",
+      "title": "Benchmark note safety (IMPLEMENTATION.md Phase 4)",
+      "status": "todo",
+      "notes": "IMPLEMENTATION.md Phase 4. New abc/metadata.json (expected safe/careful/avoid per tune). src/benchmark/runner.js + benchmark UI (src/benchmark/main.js): emit noteSafety + metrics safePrecision/safeRecall/dangerousGreenCount/avoidFalseNegativeCount/ambiguityHandled; score=0.45*prec+0.25*recall+0.20*ambig-0.25*dangerousGreen. Keep key metrics as debug. tests/benchmark.spec.js. Needs F-00010."
+    },
+    {
+      "id": "F-00014",
+      "title": "Tune note-safety thresholds (IMPLEMENTATION.md Phase 5)",
+      "status": "todo",
+      "notes": "IMPLEMENTATION.md Phase 5. Tune thresholds from benchmark results, not guessing: noisy clips -> conservative, ambiguous clips -> careful not green. Real fixtures only if small enough for GitHub else R2 + keep metadata in repo (R-005/R-010). Needs F-00013."
     }
   ],
   "progress": [
@@ -243,6 +273,24 @@
       "category": "testing",
       "text": "Benchmark: /benchmark page, window.fiddlekeyBenchmark.run({detectors,tunes,durationSec,noise:{type,snrDb,seed}}); deterministic minus wallMs; noise types session/babble/white",
       "added": "2026-06-12"
+    },
+    {
+      "id": "R-012",
+      "category": "architecture",
+      "text": "Product output = note safety, not key: computeNoteSafety (src/theory/note-safety.js) -> {status,safe,careful,avoid,ambiguity,debug}. UI never reads tonic/mode. (IMPLEMENTATION.md)",
+      "added": "2026-06-14"
+    },
+    {
+      "id": "R-013",
+      "category": "architecture",
+      "text": "detectionToNoteSafety (src/detection/note-safety-aggregator.js): detector output -> computeNoteSafety; falls back to old {tonic,mode} so UI migrates first.",
+      "added": "2026-06-14"
+    },
+    {
+      "id": "R-014",
+      "category": "conventions",
+      "text": "Fingerboard safety colour: safe=green, careful=white, avoid/very-unsure=not drawn. Never a dot for a very-unsure note. (IMPLEMENTATION.md)",
+      "added": "2026-06-14"
     }
   ]
 }
