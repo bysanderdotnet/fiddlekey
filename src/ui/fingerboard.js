@@ -1,5 +1,4 @@
-import { getScaleNotes, getPentatonicNotes, getNoteOctaves } from '../theory/scale-helper.js';
-import { NOTE_NAMES } from '../utils/notes.js';
+import { getNoteOctaves } from '../theory/scale-helper.js';
 import { Note } from "@tonaljs/tonal";
 
 const STRINGS = ['G', 'D', 'A', 'E'];
@@ -23,27 +22,33 @@ function escapeHTML(str) {
 
 
 /**
- * Updates the SVG fingerboard with note dots.
- * @param {Object} detection { tonic, mode, confidence }
+ * Updates the SVG fingerboard from a note-safety result (IMPLEMENTATION.md
+ * Phase 3). Colour by safety class, never by tonic/mode:
+ *   safe    -> green  (strongest highlight)
+ *   careful -> white  (weaker highlight)
+ *   avoid / very unsure -> not drawn at all (a blank position beats a
+ *   wrong-but-confident dot).
+ * @param {Object|null} noteSafety { status, safe:[{note}], careful:[{note}] }
  */
-export function updateFingerboard(detection) {
+export function updateFingerboard(noteSafety) {
   const container = document.getElementById('fingerboard');
   if (!container) return;
 
-  // Clear if no detection or very low confidence
-  if (!detection || detection.confidence < 0.1) {
+  if (!noteSafety || noteSafety.status === 'listening') {
     container.innerHTML = '';
     return;
   }
 
-  const { tonic, mode } = detection;
-  const tonicName = typeof tonic === 'number' ? NOTE_NAMES[tonic] : tonic;
-
   try {
-    const pentatonicNotes = getPentatonicNotes(tonicName, mode);
-    const scaleNotes = getScaleNotes(tonicName, mode);
+    const safe = (noteSafety.safe || []).map(e => e.note);
+    const careful = (noteSafety.careful || []).map(e => e.note);
 
-    renderFingerboard(container, pentatonicNotes, scaleNotes, tonicName);
+    if (safe.length === 0 && careful.length === 0) {
+      container.innerHTML = '';
+      return;
+    }
+
+    renderFingerboard(container, safe, careful);
   } catch (error) {
     console.error('Error updating fingerboard:', error);
   }
@@ -52,7 +57,7 @@ export function updateFingerboard(detection) {
 /**
  * Renders the SVG fingerboard.
  */
-function renderFingerboard(container, pentatonic, scale, tonic) {
+function renderFingerboard(container, safe, careful) {
   const width = 300;
   const height = 500;
   const margin = { top: 40, right: 30, bottom: 20, left: 30 };
@@ -84,12 +89,13 @@ function renderFingerboard(container, pentatonic, scale, tonic) {
     svgParts.push(`<line x1="${margin.left}" y1="${y}" x2="${width - margin.right}" y2="${y}" stroke="#444" stroke-width="1" stroke-dasharray="2,2" />`);
   }
 
-  // Map notes to fingerboard
+  // Map safe + careful notes to fingerboard positions. Avoid notes are never
+  // drawn — a blank position is better than a wrong-but-confident dot.
+  const safeSet = new Set(safe);
   const notesToDisplay = [];
-  scale.forEach(noteName => {
+  [...safe, ...careful].forEach(noteName => {
+    const isSafe = safeSet.has(noteName);
     const octaves = getNoteOctaves(noteName);
-    const isPentatonic = pentatonic.includes(noteName);
-    const isTonic = noteName === tonic;
 
     octaves.forEach(noteWithOctave => {
       const midi = Note.midi(noteWithOctave);
@@ -101,13 +107,7 @@ function renderFingerboard(container, pentatonic, scale, tonic) {
         const pos = midi - root;
         // First position usually spans 7 semitones (up to 4th finger)
         if (pos >= 0 && pos <= 7) {
-          notesToDisplay.push({
-            string: s,
-            pos,
-            name: noteName,
-            isPentatonic,
-            isTonic
-          });
+          notesToDisplay.push({ string: s, pos, name: noteName, isSafe });
         }
       }
     });
@@ -118,8 +118,9 @@ function renderFingerboard(container, pentatonic, scale, tonic) {
     const x = margin.left + n.string * stringSpacing;
     const y = margin.top + n.pos * posHeight;
 
-    const color = n.isPentatonic ? 'var(--accent-color, #4caf50)' : 'var(--warn-color, #ffc107)';
-    const textColor = n.isPentatonic ? '#ffffff' : '#000000';
+    // safe = green (strongest), careful = white (weaker).
+    const color = n.isSafe ? 'var(--accent-color, #4caf50)' : '#ffffff';
+    const textColor = n.isSafe ? '#ffffff' : '#000000';
     const radius = 14;
 
     // Finger number mapping
@@ -132,15 +133,15 @@ function renderFingerboard(container, pentatonic, scale, tonic) {
     if (n.pos === 0) {
       // Open string - show a ring at the nut
       svgParts.push(`
-        <g class="note-dot open-string">
+        <g class="note-dot open-string ${n.isSafe ? 'safe' : 'careful'}">
           <circle cx="${x}" cy="${margin.top}" r="${radius}" fill="#121212" stroke="${color}" stroke-width="3" />
           <text x="${x}" y="${margin.top + 5}" text-anchor="middle" fill="${color}" font-size="14" font-weight="bold">0</text>
         </g>
       `);
     } else {
       svgParts.push(`
-        <g class="note-dot">
-          <circle cx="${x}" cy="${y}" r="${radius}" fill="${color}" ${n.isTonic ? 'stroke="#ffffff" stroke-width="3"' : ''} />
+        <g class="note-dot ${n.isSafe ? 'safe' : 'careful'}">
+          <circle cx="${x}" cy="${y}" r="${radius}" fill="${color}" ${n.isSafe ? '' : 'stroke="#888" stroke-width="1"'} />
           <text x="${x}" y="${y + 5}" text-anchor="middle" fill="${textColor}" font-size="14" font-weight="bold">${escapeHTML(finger)}</text>
           <!-- Small note name label next to dot -->
           <text x="${x + 18}" y="${y + 5}" text-anchor="start" fill="#ffffff" font-size="11" font-weight="bold">${escapeHTML(n.name)}</text>

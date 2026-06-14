@@ -2,6 +2,7 @@ import { startAudio, stopAudio } from './audio/capture.js';
 import { updateKeyDisplay } from './ui/key-display.js';
 import { updateNotesDisplay } from './ui/notes-display.js';
 import { updateFingerboard } from './ui/fingerboard.js';
+import { detectionToNoteSafety } from './detection/note-safety-aggregator.js';
 import { DEFAULT_DETECTOR_ID, getDetectorOptions, getDetectorAssetUrls } from './detection/factory.js';
 
 console.log('Fiddlekey app started');
@@ -169,7 +170,7 @@ async function handleWorkerMessage(event) {
       window.dispatchEvent(new CustomEvent('fiddlekey:detection', { detail: data.detection }));
 
       if ((data.audioProcessedMs ?? 0) >= MIN_SETTLED_AUDIO_MS) {
-        await showSettledKey(bestDetection);
+        await showSettledNotes(bestDetection);
       }
     }
   } else if (data.type === 'detector_error') {
@@ -180,13 +181,16 @@ async function handleWorkerMessage(event) {
   }
 }
 
-async function showSettledKey(detection) {
+async function showSettledNotes(detection) {
   if (!isAnalyzing || !detection) return;
 
   isAnalyzing = false;
-  updateKeyDisplay(detection);
-  updateNotesDisplay(detection);
-  updateFingerboard(detection);
+  // Product output = safe/careful notes, not a key label. UI must not read
+  // tonic/mode (IMPLEMENTATION.md Phase 3); key badge is status/debug only.
+  const noteSafety = detectionToNoteSafety(detection);
+  updateNotesDisplay(noteSafety);
+  updateFingerboard(noteSafety);
+  updateKeyDisplay(noteSafety);
   await resetAnalysisState({ clearResults: false });
 }
 

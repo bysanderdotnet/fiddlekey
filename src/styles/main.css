@@ -201,8 +201,22 @@ body {
   margin-top: 30px;
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 20px;
   transition: opacity 0.5s ease;
+}
+
+.notes-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.notes-label {
+  color: var(--neutral-color);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .notes-row {
@@ -223,22 +237,32 @@ body {
   text-align: center;
 }
 
-/* Pentatonic Notes (Green) */
-.note-chip.pentatonic {
+/* Safe notes (Green) */
+.note-chip.safe {
   background-color: var(--accent-color);
 }
 
-/* Additional Scale Notes (Amber) */
-.note-chip.scale {
-  background-color: var(--warn-color);
+/* Careful notes (White / weaker) */
+.note-chip.careful {
+  background-color: #fff;
   color: #333;
 }
 
-/* Tonic Highlight */
-.note-chip.tonic {
-  border: 3px solid white;
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+/* Ambiguous "which version" notes (outlined caution) */
+.note-chip.ambiguous {
+  background-color: transparent;
+  color: var(--warn-color);
+  border: 2px dashed var(--warn-color);
+}
+
+/* Ambiguity caution lines */
+.ambiguity-section {
+  align-items: center;
+}
+
+.ambiguity-line {
+  color: var(--warn-color);
+  font-size: 0.95rem;
 }
 
 /* Fingerboard Styles */

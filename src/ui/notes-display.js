@@ -1,75 +1,86 @@
 /**
  * src/ui/notes-display.js
  *
- * Renders the safe notes (pentatonic and full scale) for the detected key.
+ * Renders the product output: safe / careful note chips from a note-safety
+ * result (IMPLEMENTATION.md Phase 3). Does NOT read tonic/mode — the player
+ * is asking what to play, not for a theory label.
  */
-
-import { getScaleNotes, getPentatonicNotes } from '../theory/scale-helper.js';
-import { NOTE_NAMES } from '../utils/notes.js';
 
 /**
- * Updates the notes display with pentatonic and scale note chips.
- * @param {Object} detection { tonic, mode, confidence }
+ * Updates the notes display from a note-safety result.
+ * @param {Object|null} noteSafety { status, safe, careful, ambiguity }
  */
-export function updateNotesDisplay(detection) {
+export function updateNotesDisplay(noteSafety) {
   const container = document.getElementById('notes-display');
   if (!container) return;
 
-  // Clear if no detection or very low confidence
-  if (!detection || detection.confidence < 0.1) {
+  if (!noteSafety || noteSafety.status === 'listening') {
     container.innerHTML = '';
     container.style.opacity = '0';
     return;
   }
 
-  const { tonic, mode } = detection;
-  const tonicName = typeof tonic === 'number' ? NOTE_NAMES[tonic] : tonic;
+  container.style.opacity = '1';
+  container.innerHTML = '';
 
-  try {
-    const pentatonicNotes = getPentatonicNotes(tonicName, mode);
-    const scaleNotes = getScaleNotes(tonicName, mode);
+  renderSection(container, 'Safe notes', noteSafety.safe, 'safe');
+  renderSection(container, 'Careful', noteSafety.careful, 'careful');
 
-    // Additional notes are those in the scale but not in the pentatonic set
-    const additionalNotes = scaleNotes.filter(n => !pentatonicNotes.includes(n));
-
-    // Simple fade-in transition
-    container.style.opacity = '1';
-    container.innerHTML = '';
-
-    // 1. Pentatonic Row (Safe notes)
-    const pentaRow = document.createElement('div');
-    pentaRow.className = 'notes-row pentatonic-row';
-
-    pentatonicNotes.forEach(note => {
-      const chip = createNoteChip(note, 'pentatonic', note === tonicName);
-      pentaRow.appendChild(chip);
-    });
-
-    container.appendChild(pentaRow);
-
-    // 2. Additional Scale Notes Row
-    if (additionalNotes.length > 0) {
-      const scaleRow = document.createElement('div');
-      scaleRow.className = 'notes-row scale-row';
-
-      additionalNotes.forEach(note => {
-        const chip = createNoteChip(note, 'scale', false);
-        scaleRow.appendChild(chip);
-      });
-
-      container.appendChild(scaleRow);
-    }
-  } catch (error) {
-    console.error('Error updating notes display:', error);
+  if (noteSafety.ambiguity && noteSafety.ambiguity.length) {
+    renderAmbiguity(container, noteSafety.ambiguity);
   }
+}
+
+/**
+ * Renders a labelled row of note chips. Skips empty sections.
+ */
+function renderSection(container, label, notes, safetyClass) {
+  if (!notes || notes.length === 0) return;
+
+  const section = document.createElement('div');
+  section.className = `notes-section ${safetyClass}-section`;
+
+  const heading = document.createElement('div');
+  heading.className = 'notes-label';
+  heading.textContent = label;
+  section.appendChild(heading);
+
+  const row = document.createElement('div');
+  row.className = 'notes-row';
+
+  notes.forEach(entry => {
+    // ambiguous careful notes get their own chip class
+    const cls = entry.reason === 'ambiguous' ? 'ambiguous' : safetyClass;
+    row.appendChild(createNoteChip(entry.note, cls));
+  });
+
+  section.appendChild(row);
+  container.appendChild(section);
+}
+
+/**
+ * Renders "X / Y unclear" caution lines from ambiguity pairs.
+ */
+function renderAmbiguity(container, ambiguity) {
+  const section = document.createElement('div');
+  section.className = 'notes-section ambiguity-section';
+
+  ambiguity.forEach(pair => {
+    const line = document.createElement('div');
+    line.className = 'ambiguity-line';
+    line.textContent = `${pair.notes.join(' / ')} unclear`;
+    section.appendChild(line);
+  });
+
+  container.appendChild(section);
 }
 
 /**
  * Helper to create a note chip element.
  */
-function createNoteChip(note, type, isTonic) {
+function createNoteChip(note, safetyClass) {
   const chip = document.createElement('div');
-  chip.className = `note-chip ${type}${isTonic ? ' tonic' : ''}`;
+  chip.className = `note-chip ${safetyClass}`;
   chip.textContent = note;
   return chip;
 }

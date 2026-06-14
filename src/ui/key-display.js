@@ -1,24 +1,39 @@
 /**
  * src/ui/key-display.js
  *
- * Updates the UI with the detected key, mode, and confidence.
+ * Status badge for the note-safety result (IMPLEMENTATION.md Phase 3).
+ * NOT a key label: never shows "D major". Reads only the note-safety
+ * status + debug confidence — never tonic/mode as the product answer.
  */
 
-import { NOTE_NAMES, getFormattedMode } from '../utils/notes.js';
+const STATUS_BADGE = {
+  listening: 'Still listening',
+  uncertain: 'Unclear',
+  usable: 'Safe notes found',
+  stable: 'Safe notes found'
+};
+
+const STATUS_TEXT = {
+  uncertain: 'Audio is ambiguous — try the careful notes quietly.',
+  usable: 'Based on several possible key areas.',
+  stable: 'Based on several possible key areas.'
+};
 
 /**
- * Updates the key display DOM elements.
- * @param {Object} detection { tonic, mode, confidence, alternate, score }
+ * Updates the status badge from a note-safety result.
+ * @param {Object|null} noteSafety { status, debug:{ confidence } }
  */
-export function updateKeyDisplay(detection) {
+export function updateKeyDisplay(noteSafety) {
   const container = document.getElementById('key-display');
   if (!container) return;
 
   const keyBadge = container.querySelector('.key-badge');
+  const status = container.querySelector('.analysis-status');
   const confidenceBar = container.querySelector('.confidence-fill');
 
-  if (!detection) {
+  if (!noteSafety || noteSafety.status === 'listening') {
     if (keyBadge) keyBadge.textContent = '---';
+    if (status) status.textContent = '';
     if (confidenceBar) {
       confidenceBar.style.width = '0%';
       confidenceBar.className = 'confidence-fill status-none';
@@ -26,28 +41,14 @@ export function updateKeyDisplay(detection) {
     return;
   }
 
-  const { tonic, mode, confidence, score } = detection;
-  const tonicName = typeof tonic === 'number' ? NOTE_NAMES[tonic] : tonic;
-  const formattedMode = getFormattedMode(mode);
+  if (keyBadge) keyBadge.textContent = STATUS_BADGE[noteSafety.status] ?? 'Safe notes found';
+  if (status) status.textContent = STATUS_TEXT[noteSafety.status] ?? '';
 
-  // 1. Update Key Badge
-  if (keyBadge) {
-    keyBadge.textContent = `${tonicName} ${formattedMode}`;
-  }
-
-  // 2. Update Confidence Bar
   if (confidenceBar) {
-    const percentage = Math.round(confidence * 100);
-    confidenceBar.style.width = `${percentage}%`;
-
-    // Color logic
-    if (confidence < 0.2) {
-      confidenceBar.className = 'confidence-fill status-low';
-    } else if (confidence < 0.5) {
-      confidenceBar.className = 'confidence-fill status-medium';
-    } else {
-      confidenceBar.className = 'confidence-fill status-high';
-    }
+    const confidence = noteSafety.debug?.confidence ?? 0;
+    confidenceBar.style.width = `${Math.round(confidence * 100)}%`;
+    confidenceBar.className = confidence < 0.2 ? 'confidence-fill status-low'
+      : confidence < 0.5 ? 'confidence-fill status-medium'
+        : 'confidence-fill status-high';
   }
-
 }
