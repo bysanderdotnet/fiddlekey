@@ -21,7 +21,7 @@
 import { getAveragedChroma } from '../../utils/chroma.js';
 import { KeyDetector } from '../detector.js';
 import { KeySmoother } from '../../utils/smoothing.js';
-import { detectKey } from '../profile-matching.js';
+import { detectKey, detectKeyCandidates } from '../profile-matching.js';
 
 const MIN_FREQUENCY = 180;
 const MAX_FREQUENCY = 3500;
@@ -86,6 +86,7 @@ export class WebAudioPCPDetector extends KeyDetector {
 
     if (smoothedDetection) {
       smoothedDetection.chroma = averagedPcp;
+      smoothedDetection.candidates = detectKeyCandidates(averagedPcp).slice(0, 5);
     }
 
     return smoothedDetection;

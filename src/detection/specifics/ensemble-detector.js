@@ -91,6 +91,9 @@ export class EnsembleDetector extends KeyDetector {
     if (smoothedDetection) {
       smoothedDetection.chroma = combined.chroma;
       smoothedDetection.ensemble = combined.ensemble;
+      // Ranked fused keys are already {tonic, mode, score}; reuse as candidates
+      // for the note-safety layer (IMPLEMENTATION.md Phase 2).
+      smoothedDetection.candidates = combined.ensemble.ranked.slice(0, 5);
     }
 
     return smoothedDetection;

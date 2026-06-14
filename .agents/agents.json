@@ -101,7 +101,7 @@
     {
       "id": "F-00011",
       "title": "Expose detector candidates (IMPLEMENTATION.md Phase 2)",
-      "status": "todo",
+      "status": "done",
       "notes": "IMPLEMENTATION.md Phase 2. Add detectKeyCandidates() to src/detection/profile-matching.js (keep existing fns). Attach rawDetection.candidates=detectKeyCandidates(avgChroma).slice(0,5) in detectors: essentia, webaudio-pcp, meyda, essentia-nnls, ensemble. Keep interface; old UI still works. Not blocked on HF/ONNX. Feeds F-00010."
     },
     {
@@ -220,6 +220,15 @@
       "next": "Phase 2: profile-matching detectKeyCandidates(); attach candidates in essentia/webaudio-pcp/meyda/essentia-nnls/ensemble detectors.",
       "blockers": "none",
       "commit": "b51e187 (+ uncommitted changes)"
+    },
+    {
+      "date": "2026-06-14 20:13 UTC",
+      "title": "F-00011 expose detector candidates",
+      "done": "Phase 2 (IMPLEMENTATION.md). Added detectKeyCandidates(chroma) to src/detection/profile-matching.js (maps scoreKeyCandidates -> {tonic name, mode, score, rawScore}; kept existing fns). Attached rawDetection.candidates=detectKeyCandidates(avgChroma).slice(0,5) on smoothedDetection in essentia, webaudio-pcp, meyda, essentia-nnls. Ensemble reuses combined.ensemble.ranked.slice(0,5) ({tonic,mode,score}). Interface unchanged; old UI still works. Tests: profile-matching.test.js detectKeyCandidates case; webaudio-pcp-detector.test.js candidates attach case.",
+      "verified": "pass (2026-06-14 20:13 UTC @ 8a87f60)",
+      "next": "Phase 3: replace notes UI (main.js, notes-display.js, fingerboard.js, key-display.js) to render safe/careful from detectionToNoteSafety, drop tonic/mode dependency.",
+      "blockers": "none",
+      "commit": "8a87f60 (+ uncommitted changes)"
     }
   ],
   "rules": [

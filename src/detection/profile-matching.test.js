@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { detectKey, scoreKeyCandidates, rotate } from './profile-matching.js';
+import { detectKey, detectKeyCandidates, scoreKeyCandidates, rotate } from './profile-matching.js';
 import { MODES, NOTE_NAMES } from '../utils/notes.js';
 
 // Builds a synthetic chroma vector emphasizing the notes of a scale.
@@ -69,5 +69,21 @@ describe('scoreKeyCandidates', () => {
     const results = scoreKeyCandidates(chromaFor('D', MAJOR_INTERVALS));
     const dMajor = results.find(r => r.tonicName === 'D' && r.mode === MODES.MAJOR);
     expect(dMajor.score).toBeGreaterThan(dMajor.rawScore);
+  });
+});
+
+describe('detectKeyCandidates', () => {
+  it('returns ranked candidates with note-name tonic for the note-safety layer', () => {
+    const candidates = detectKeyCandidates(chromaFor('G', MAJOR_INTERVALS));
+    expect(candidates).toHaveLength(24);
+    expect(candidates[0]).toEqual({
+      tonic: expect.any(String),
+      mode: expect.stringMatching(/^(major|minor)$/),
+      score: expect.any(Number),
+      rawScore: expect.any(Number)
+    });
+    expect(candidates[0].tonic).toBe('G');
+    expect(candidates[0].mode).toBe(MODES.MAJOR);
+    expect(candidates[0].score).toBeGreaterThanOrEqual(candidates[23].score);
   });
 });
