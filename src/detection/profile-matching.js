@@ -96,6 +96,23 @@ export function scoreKeyCandidates(chroma, options = {}) {
   return results;
 }
 
+/**
+ * Returns the ranked key candidates as {tonic, mode, score, rawScore}, tonic as
+ * a note name. Feeds the note-safety layer (IMPLEMENTATION.md Phase 2); the
+ * `mode` stays internal and must never be the product answer.
+ * @param {number[]} chroma
+ * @param {Object} [options] { commonKeyBoost }
+ * @returns {Array<{tonic:string, mode:string, score:number, rawScore:number}>}
+ */
+export function detectKeyCandidates(chroma, options = {}) {
+  return scoreKeyCandidates(chroma, options).map(candidate => ({
+    tonic: candidate.tonicName,
+    mode: candidate.mode,
+    score: candidate.score,
+    rawScore: candidate.rawScore
+  }));
+}
+
 function getAllProfiles() {
   if (cachedProfiles) return cachedProfiles;
 

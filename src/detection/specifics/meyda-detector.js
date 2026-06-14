@@ -10,7 +10,7 @@ import { getAveragedChroma } from '../../utils/chroma.js';
 import { KeyDetector } from '../detector.js';
 import Meyda from 'meyda';
 import { KeySmoother } from '../../utils/smoothing.js';
-import { detectKey } from '../profile-matching.js';
+import { detectKey, detectKeyCandidates } from '../profile-matching.js';
 
 export class MeydaDetector extends KeyDetector {
   constructor() {
@@ -78,6 +78,7 @@ export class MeydaDetector extends KeyDetector {
 
           if (smoothedDetection) {
             smoothedDetection.chroma = averagedChroma;
+            smoothedDetection.candidates = detectKeyCandidates(averagedChroma).slice(0, 5);
           }
 
           return smoothedDetection;

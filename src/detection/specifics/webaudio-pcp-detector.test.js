@@ -41,6 +41,22 @@ describe('WebAudioPCPDetector', () => {
     expect(detection.mode).toBe('major');
   });
 
+  it('attaches ranked candidates for the note-safety layer (F-00011)', async () => {
+    const abc = readFileSync(new URL('../../../abc/c_major.abc', import.meta.url), 'utf8');
+    const pcm = synthesizeTune(abc, { sampleRate: SAMPLE_RATE, durationSec: 15 });
+
+    const detector = new WebAudioPCPDetector();
+    await detector.init(SAMPLE_RATE, BUFFER);
+    const detection = streamThrough(detector, pcm);
+
+    expect(detection).not.toBeNull();
+    expect(Array.isArray(detection.candidates)).toBe(true);
+    expect(detection.candidates.length).toBeLessThanOrEqual(5);
+    expect(detection.candidates[0]).toHaveProperty('tonic');
+    expect(detection.candidates[0]).toHaveProperty('mode');
+    expect(detection.candidates[0]).toHaveProperty('score');
+  });
+
   it('damps the harmonic self-vote so overtone bins credit their fundamental', () => {
     // A lone partial at ~786 Hz (G, the 3rd harmonic of C). Its h=1 self-vote
     // lands on G; its h=3 fold lands on C. A smaller self-weight shifts share

@@ -28,7 +28,7 @@ import { KeyDetector } from '../detector.js';
 import { EssentiaWASM } from 'essentia.js/dist/essentia-wasm.es.js';
 import Essentia from 'essentia.js/dist/essentia.js-core.es.js';
 import { KeySmoother } from '../../utils/smoothing.js';
-import { detectKey, rotate } from '../profile-matching.js';
+import { detectKey, detectKeyCandidates, rotate } from '../profile-matching.js';
 
 const ANALYSIS_INTERVAL_MS = 500;
 const ANALYSIS_BUDGET_MS = 1500;
@@ -96,6 +96,7 @@ export class KeyEssentiaNNLSDetector extends KeyDetector {
 
     if (smoothedDetection) {
       smoothedDetection.chroma = chroma;
+      smoothedDetection.candidates = detectKeyCandidates(chroma).slice(0, 5);
     }
 
     return smoothedDetection;
