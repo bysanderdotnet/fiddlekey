@@ -9,6 +9,9 @@ import { synthesizeTune } from './abc-synth.js';
 import { mixNoise, hashString } from './noise.js';
 import { TUNES, getTune } from './tunes.js';
 import { getDetectorIds } from '../detection/factory.js';
+import { detectionToNoteSafety } from '../detection/note-safety-aggregator.js';
+import { computeNoteSafetyMetrics, summarizeNoteSafety } from './note-safety-metrics.js';
+import noteSafetyMetadata from '../../abc/metadata.json';
 
 export const DEFAULT_OPTIONS = {
   detectors: null, // null = all from factory.js
@@ -25,6 +28,7 @@ function runSingle({ detectorId, pcm, sampleRate, chunkSize }) {
   return new Promise((resolve, reject) => {
     const worker = new Worker(new URL('../audio/worker.js', import.meta.url), { type: 'module' });
     const updates = [];
+    let finalDetection = null;
     let startedAt = 0;
 
     const timeout = setTimeout(() => {
@@ -58,8 +62,9 @@ function runSingle({ detectorId, pcm, sampleRate, chunkSize }) {
           mode: data.detection.mode,
           confidence: data.detection.confidence
         });
+        finalDetection = data.detection; // full result (candidates + chroma) for note safety
       } else if (data.type === 'flush_done') {
-        finish(resolve, { updates, wallMs: Math.round(performance.now() - startedAt) });
+        finish(resolve, { updates, finalDetection, wallMs: Math.round(performance.now() - startedAt) });
       }
     };
 
@@ -77,7 +82,7 @@ function isCorrect(update, expected) {
   return update && update.tonic === expected.tonic && update.mode === expected.mode;
 }
 
-function computeMetrics({ updates, wallMs }, expected) {
+function computeMetrics({ updates, finalDetection, wallMs }, expected, meta) {
   const final = updates.length ? updates[updates.length - 1] : null;
   let firstCorrectMs = null;
   let settledMs = null;
@@ -89,9 +94,20 @@ function computeMetrics({ updates, wallMs }, expected) {
       settledMs = null; // wrong again — not settled yet
     }
   }
+
+  // Product output: safe/careful/avoid notes scored against jam metadata.
+  const noteSafety = detectionToNoteSafety(finalDetection);
+  const noteSafetyMetrics = computeNoteSafetyMetrics(noteSafety, meta);
+
   return {
-    final: final ? { tonic: final.tonic, mode: final.mode, confidence: final.confidence } : null,
+    // Note safety = the product answer (IMPLEMENTATION.md Phase 4).
+    noteSafety: noteSafety
+      ? { status: noteSafety.status, safe: noteSafety.safe, careful: noteSafety.careful, avoid: noteSafety.avoid, ambiguity: noteSafety.ambiguity }
+      : null,
+    noteSafetyMetrics,
+    // Exact key correctness kept as debug/comparison only.
     correct: isCorrect(final, expected),
+    final: final ? { tonic: final.tonic, mode: final.mode, confidence: final.confidence } : null,
     firstCorrectMs, // audio ms when the detector was first right
     settledMs, // audio ms after which it stayed right until the end
     updateCount: updates.length,
@@ -132,7 +148,7 @@ export async function runBenchmark(options = {}, onProgress = () => {}) {
       let row;
       try {
         const run = await runSingle({ detectorId, pcm, sampleRate: opts.sampleRate, chunkSize: opts.chunkSize });
-        row = { tune: tuneName, expected: tune.expected, detectorId, ...computeMetrics(run, tune.expected) };
+        row = { tune: tuneName, expected: tune.expected, detectorId, ...computeMetrics(run, tune.expected, noteSafetyMetadata[tuneName]) };
       } catch (err) {
         row = { tune: tuneName, expected: tune.expected, detectorId, error: err.message, correct: false };
       }
@@ -158,13 +174,25 @@ export function summarize(results) {
     if (row.settledMs != null) { acc.settledMsSum += row.settledMs; acc.settledCount++; }
     if (row.wallMs != null) acc.wallMsSum += row.wallMs;
   }
-  return [...byDetector.values()].map(acc => ({
-    detectorId: acc.detectorId,
-    runs: acc.runs,
-    correct: acc.correct,
-    errors: acc.errors,
-    accuracy: acc.runs ? acc.correct / acc.runs : 0,
-    avgSettledMs: acc.settledCount ? Math.round(acc.settledMsSum / acc.settledCount) : null,
-    avgWallMs: acc.runs ? Math.round(acc.wallMsSum / acc.runs) : null
-  })).sort((a, b) => b.accuracy - a.accuracy || (a.avgSettledMs ?? Infinity) - (b.avgSettledMs ?? Infinity));
+  const noteSafetyByDetector = new Map(summarizeNoteSafety(results).map(s => [s.detectorId, s]));
+
+  return [...byDetector.values()].map(acc => {
+    const ns = noteSafetyByDetector.get(acc.detectorId);
+    return {
+      detectorId: acc.detectorId,
+      runs: acc.runs,
+      // Note-safety = product metrics (IMPLEMENTATION.md Phase 4).
+      noteSafetyScore: ns ? ns.avgScore : 0,
+      safePrecision: ns ? ns.avgSafePrecision : 0,
+      safeRecall: ns ? ns.avgSafeRecall : 0,
+      dangerousGreenTotal: ns ? ns.dangerousGreenTotal : 0,
+      avoidFalseNegativeTotal: ns ? ns.avoidFalseNegativeTotal : 0,
+      // Exact key correctness kept as debug/comparison only.
+      correct: acc.correct,
+      errors: acc.errors,
+      accuracy: acc.runs ? acc.correct / acc.runs : 0,
+      avgSettledMs: acc.settledCount ? Math.round(acc.settledMsSum / acc.settledCount) : null,
+      avgWallMs: acc.runs ? Math.round(acc.wallMsSum / acc.runs) : null
+    };
+  }).sort((a, b) => b.noteSafetyScore - a.noteSafetyScore || b.accuracy - a.accuracy);
 }

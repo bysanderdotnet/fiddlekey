@@ -38,10 +38,22 @@ test.describe('benchmark page', () => {
     // the detector recognizes C major at least once.
     expect(row.firstCorrectMs).not.toBeNull();
 
+    // Note safety = the product answer (IMPLEMENTATION.md Phase 4).
+    expect(row.noteSafety).not.toBeNull();
+    expect(Array.isArray(row.noteSafety.safe)).toBe(true);
+    const nm = row.noteSafetyMetrics;
+    expect(nm).toBeTruthy();
+    for (const key of ['safePrecision', 'safeRecall', 'dangerousGreenCount', 'avoidFalseNegativeCount', 'usefulGreenCount', 'ambiguityHandled', 'score']) {
+      expect(typeof nm[key]).toBe('number');
+    }
+    // C major synth should not be told to play out-of-scale notes as safe green.
+    expect(nm.dangerousGreenCount).toBe(0);
+
     // Results rendered in the page too.
     await expect(page.locator('#results-table tbody tr')).toHaveCount(1);
     await expect(page.locator('#summary-table tbody tr')).toHaveCount(1);
     await expect(page.locator('#benchmark-json')).toContainText('"detectorId": "webaudioPcp"');
+    await expect(page.locator('#benchmark-json')).toContainText('"noteSafetyMetrics"');
 
     // Determinism: identical options -> identical detection trace
     // (wallMs is real time, so compare everything except it).
