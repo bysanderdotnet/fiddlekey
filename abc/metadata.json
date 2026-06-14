@@ -1,0 +1,56 @@
+{
+  "a_minor": {
+    "safe": ["A", "C", "D", "E", "G"],
+    "careful": ["B", "F"],
+    "avoid": ["C#", "D#", "F#", "G#", "A#"],
+    "notes": "A minor pentatonic is always safe; B (2nd) and F (b6) are scale colour."
+  },
+  "b_minor": {
+    "safe": ["B", "D", "E", "F#", "A"],
+    "careful": ["C#", "G"],
+    "avoid": ["C", "D#", "F", "G#", "A#"],
+    "notes": "B minor pentatonic anchors; C# (2nd) and G (b6) are careful colour."
+  },
+  "c_major": {
+    "safe": ["C", "D", "E", "G", "A"],
+    "careful": ["F", "B"],
+    "avoid": ["C#", "D#", "F#", "G#", "A#"],
+    "notes": "C major pentatonic; F (4th) and B (7th) can clash on the wrong chord."
+  },
+  "d_dorian": {
+    "safe": ["D", "F", "G", "A", "C"],
+    "careful": ["E", "B"],
+    "avoid": ["C#", "D#", "F#", "G#", "A#"],
+    "notes": "Plays minor-ish; D minor pentatonic safe. B is the dorian natural 6 — careful."
+  },
+  "e_major": {
+    "safe": ["E", "F#", "G#", "B", "C#"],
+    "careful": ["A", "D#"],
+    "avoid": ["C", "D", "F", "G", "A#"],
+    "notes": "E major pentatonic; A (4th) and D# (7th) are careful colour."
+  },
+  "e_phrygian": {
+    "safe": ["E", "G", "A", "B", "D"],
+    "careful": ["F", "C"],
+    "avoid": ["C#", "D#", "F#", "G#", "A#"],
+    "notes": "Plays minor-ish; E minor pentatonic safe. F is the phrygian b2 — careful."
+  },
+  "f_lydian": {
+    "safe": ["F", "G", "A", "C", "D"],
+    "careful": ["B", "E"],
+    "avoid": ["C#", "D#", "F#", "G#", "A#"],
+    "notes": "Plays major-ish; F major pentatonic safe. B is the lydian #4 — careful."
+  },
+  "g_major": {
+    "safe": ["G", "A", "B", "D", "E"],
+    "careful": ["C", "F#"],
+    "avoid": ["C#", "D#", "F", "G#", "A#"],
+    "notes": "G major pentatonic; C (4th) and F# (7th) are careful colour."
+  },
+  "g_mixolydian": {
+    "safe": ["G", "A", "B", "D", "E"],
+    "careful": ["C", "F"],
+    "avoid": ["C#", "D#", "F#", "G#", "A#"],
+    "notes": "Plays major-ish; G major pentatonic safe. F is the mixolydian b7 — careful."
+  }
+}

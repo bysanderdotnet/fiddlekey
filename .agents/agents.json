@@ -113,7 +113,7 @@
     {
       "id": "F-00013",
       "title": "Benchmark note safety (IMPLEMENTATION.md Phase 4)",
-      "status": "todo",
+      "status": "done",
       "notes": "IMPLEMENTATION.md Phase 4. New abc/metadata.json (expected safe/careful/avoid per tune). src/benchmark/runner.js + benchmark UI (src/benchmark/main.js): emit noteSafety + metrics safePrecision/safeRecall/dangerousGreenCount/avoidFalseNegativeCount/ambiguityHandled; score=0.45*prec+0.25*recall+0.20*ambig-0.25*dangerousGreen. Keep key metrics as debug. tests/benchmark.spec.js. Needs F-00010."
     },
     {
@@ -238,6 +238,15 @@
       "next": "Phase 4: benchmark note-safety metrics (runner.js, benchmark/ui.js, abc/metadata.json, tests/benchmark.spec.js).",
       "blockers": "none",
       "commit": "40ca465 (+ uncommitted changes)"
+    },
+    {
+      "date": "2026-06-14 21:11 UTC",
+      "title": "F-00013 benchmark note-safety metrics",
+      "done": "Phase 4. abc/metadata.json: per-tune expected safe/careful/avoid (9 tunes). src/benchmark/note-safety-metrics.js: computeNoteSafetyMetrics (safePrecision/safeRecall/dangerousGreenCount/avoidFalseNegativeCount/usefulGreenCount/ambiguityHandled, score=0.45*prec+0.25*recall+0.20*ambig-0.25*dangerousGreen) + summarizeNoteSafety; +note-safety-metrics.test.js (11 tests). runner.js: capture full finalDetection, emit noteSafety+noteSafetyMetrics per row; summarize() leads with note-safety, key accuracy demoted to debug. main.js+benchmark.html: note-safety columns, key=debug. benchmark.spec.js asserts noteSafety+metrics.",
+      "verified": "pass (2026-06-14 21:10 UTC @ cab5cd6)",
+      "next": "Phase 5: tune thresholds with real audio fixtures",
+      "blockers": "none",
+      "commit": "cab5cd6 (+ uncommitted changes)"
     }
   ],
   "rules": [
