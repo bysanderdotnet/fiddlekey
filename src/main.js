@@ -2,7 +2,7 @@ import { startAudio, stopAudio } from './audio/capture.js';
 import { updateKeyDisplay } from './ui/key-display.js';
 import { updateFingerboard } from './ui/fingerboard.js';
 import { detectionToNoteSafety } from './detection/note-safety-aggregator.js';
-import { DEFAULT_DETECTOR_ID, getDetectorOptions, getDetectorAssetUrls } from './detection/factory.js';
+import { DEFAULT_DETECTOR_ID, getDetectorOptions } from './detection/factory.js';
 
 console.log('Fiddlekey app started');
 
@@ -52,23 +52,7 @@ function initDetectorSettings() {
 
   detectorSelect.addEventListener('change', () => {
     localStorage.setItem('fiddlekey_detector_id', detectorSelect.value);
-    prefetchDetectorAssets(detectorSelect.value);
   });
-}
-
-// Warm the browser cache with the selected detector's large R2 model so the
-// download is (often) already done by the time the user hits "Detect notes".
-// Runtime WASM ships in the build and is precached by the service worker.
-function prefetchDetectorAssets(detectorId) {
-  for (const url of getDetectorAssetUrls(detectorId)) {
-    if (document.head.querySelector(`link[rel="prefetch"][href="${url}"]`)) continue;
-    const link = document.createElement('link');
-    link.rel = 'prefetch';
-    link.as = 'fetch';
-    link.href = url;
-    link.crossOrigin = 'anonymous';
-    document.head.appendChild(link);
-  }
 }
 
 function getSelectedDetectorId() {
@@ -76,7 +60,6 @@ function getSelectedDetectorId() {
 }
 
 initDetectorSettings();
-prefetchDetectorAssets(getSelectedDetectorId());
 
 // --- PWA Installation ---
 window.addEventListener('beforeinstallprompt', (e) => {

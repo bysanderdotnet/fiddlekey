@@ -121,6 +121,12 @@
       "title": "Tune note-safety thresholds (IMPLEMENTATION.md Phase 5)",
       "status": "todo",
       "notes": "IMPLEMENTATION.md Phase 5. Tune thresholds from benchmark results, not guessing: noisy clips -> conservative, ambiguous clips -> careful not green. Real fixtures only if small enough for GitHub else R2 + keep metadata in repo (R-005/R-010). Needs F-00013."
+    },
+    {
+      "id": "F-00015",
+      "title": "Cleanup: keep only essentia detector, drop R2",
+      "status": "done",
+      "notes": "Remove meyda/onnx/essentia-variant/ensemble/ml/webaudio/hf detectors + tests. Remove onnx-runtime + fetch-progress. Move essentia-detector.js to src/detectors/. Strip Cloudflare R2: r2-assets.json, MODEL_BASE_URL, prefetch, onnx vite config, README section, rules R-005/R-010."
     }
   ],
   "progress": [
@@ -247,15 +253,19 @@
       "next": "Phase 5: tune thresholds with real audio fixtures",
       "blockers": "none",
       "commit": "cab5cd6 (+ uncommitted changes)"
+    },
+    {
+      "date": "2026-06-15 10:33 UTC",
+      "title": "detector cleanup: essentia only, drop R2",
+      "done": "Removed 8 variant detectors+tests (webaudio-pcp/essentia-key-extractor/essentia-nnls/meyda/ml-pitch-histogram/ensemble/onnx-cnn/hf-key-class), onnx-runtime+test, utils/fetch-progress.js, r2-assets.json. Moved essentia-detector.js -> src/detectors/ (import depth fixed). factory.js: essentia only, dropped getDetectorAssetUrls/MODEL_BASE_URL. main.js: removed R2 prefetch. vite.config.js+vitest.config.js: dropped R2/onnx defines+resolve+runtimeCaching. package.json: dropped meyda+onnxruntime-web (lock pruned). .gitignore/README/AGENTS.md: R2 refs removed; paths -> src/detectors/. Rules R-001/R-005/R-010 -> R-015/R-016.",
+      "verified": "pass (2026-06-15 10:33 UTC @ 0c0bb24)",
+      "next": "F-00014 tune note-safety thresholds",
+      "blockers": "none",
+      "feature": "F-00015",
+      "commit": "0c0bb24 (+ uncommitted changes)"
     }
   ],
   "rules": [
-    {
-      "id": "R-001",
-      "category": "architecture",
-      "text": "Audio: mic -> AudioWorklet (4096 PCM) -> Web Worker (src/audio/worker.js) -> KeyDetector. Detectors in src/detection/specifics/, registered in src/detection/factory.js, lazy-loaded.",
-      "added": "2026-06-12"
-    },
     {
       "id": "R-002",
       "category": "architecture",
@@ -275,12 +285,6 @@
       "added": "2026-06-12"
     },
     {
-      "id": "R-005",
-      "category": "conventions",
-      "text": "Large binaries (WAV, ONNX) never in repo; host on Cloudflare R2 (r2-assets.json + README). No Git LFS.",
-      "added": "2026-06-12"
-    },
-    {
       "id": "R-006",
       "category": "testing",
       "text": "Never test via vite dev; always npm run build + serve dist/ (npm run preview). playwright.config.js webServer enforces this.",
@@ -296,12 +300,6 @@
       "id": "R-009",
       "category": "testing",
       "text": "e2e chromium auto-installed by init cmd 'browsers' (npx playwright install chromium). Fake mic via launch flags in playwright.config.js.",
-      "added": "2026-06-12"
-    },
-    {
-      "id": "R-010",
-      "category": "conventions",
-      "text": "R2 base URL: https://r2-fiddlekey.bysander.net. Agents have NO R2 credentials; never script uploads. New large asset: script to fetch/generate it + name suggestion + r2-assets.json entry, then ask human to upload.",
       "added": "2026-06-12"
     },
     {
@@ -327,6 +325,18 @@
       "category": "conventions",
       "text": "Fingerboard safety colour: safe=green, careful=white, avoid/very-unsure=not drawn. Never a dot for a very-unsure note. (IMPLEMENTATION.md)",
       "added": "2026-06-14"
+    },
+    {
+      "id": "R-015",
+      "category": "architecture",
+      "text": "Audio: mic -> AudioWorklet (4096 PCM) -> Web Worker (src/audio/worker.js) -> KeyDetector. Single detector src/detectors/essentia-detector.js (essentia.js HPCP), registered in src/detection/factory.js, lazy-loaded.",
+      "added": "2026-06-15"
+    },
+    {
+      "id": "R-016",
+      "category": "conventions",
+      "text": "Large/binary assets (WAV) never committed. No Git LFS. No Cloudflare R2 / remote model hosting.",
+      "added": "2026-06-15"
     }
   ]
 }

@@ -46,7 +46,7 @@ fingers on. Once you know which notes are safe, your ear can do the rest.
 | 🖐️ **Finger placement** | SVG violin fingerboard, first position; each note coloured by safety — green = safe, white = careful, very-unsure notes are left blank |
 | 🤝 **Ambiguity-aware** *(in progress)* | When two notes (e.g. C / C#) are both plausible, both are shown as *careful* instead of guessing — conservative beats overconfident |
 | 🎵 **Key engine** *(debug)* | Tonic + major/minor is still computed internally to feed safe-note scoring; it is no longer the product output and is hidden by default |
-| 🔁 **Swappable detectors** | Multiple detection algorithms behind one `KeyDetector` interface; pick one in Settings |
+| 🔁 **Pluggable detector** | Detection sits behind one `KeyDetector` interface (currently Essentia.js HPCP); swap or add implementations in `src/detectors/` |
 | 📱 **Works offline** | Fully client-side PWA — no server, no login, no internet needed at the session |
 | 📊 **Benchmark mode** | `/benchmark` compares detectors on the ABC test tunes — accuracy, time-to-detect, and (planned) note-safety metrics |
 
@@ -85,7 +85,7 @@ index.html, src/main.js     App shell: start button, detector picker, PWA instal
 src/audio/                  Mic capture → AudioWorklet (4096-sample PCM chunks) → Web Worker
 src/detection/detector.js   KeyDetector interface: init / process / resetHistory / destroy
 src/detection/factory.js    Detector registry (lazy-loaded); add new detectors here
-src/detection/specifics/    One file per detector implementation
+src/detectors/              One file per detector implementation (essentia-detector.js)
 src/detection/profile-matching.js
                             Krumhansl-Schmuckler major/minor profiles, Pearson scoring,
                             common-session-key prior — 24 candidates (12 tonics × 2 modes)
@@ -124,7 +124,7 @@ avoid / very-unsure → not drawn**. Full spec and rollout phases:
 
 ### Adding a detector
 
-1. Create `src/detection/specifics/<name>-detector.js` extending `KeyDetector`.
+1. Create `src/detectors/<name>-detector.js` extending `KeyDetector`.
 2. Register it in `src/detection/factory.js`.
 3. Compare it against the others in benchmark mode.
 
@@ -164,7 +164,7 @@ the programmatic API let you pick a subset:
 ```js
 // In the browser console on /benchmark, or injected via Playwright:
 const results = await window.fiddlekeyBenchmark.run({
-  detectors: ['essentia', 'meyda'],   // omit or [] = all registered detectors
+  detectors: ['essentia'],            // omit or [] = all registered detectors
   tunes: ['c_major', 'a_minor'],      // omit or [] = all abc/ tunes
   durationSec: 30,                    // seconds of audio per tune
   noise: { type: 'session', snrDb: 10, seed: 1 }
@@ -198,49 +198,6 @@ noise into the signal (`src/benchmark/noise.js`):
 - `white` — worst-case broadband noise.
 - `snrDb` sets signal-to-noise ratio: 20 ≈ quiet corner, 10 ≈ lively pub,
   0 = noise as loud as the tune.
-
----
-
-## Large assets: Cloudflare R2
-
-GitHub blocks files over 100 MB and we do not use Git LFS. Any large binary
-(ONNX models, audio) is hosted on Cloudflare R2 and fetched at runtime:
-
-- Public base URL: `https://r2-fiddlekey.bysander.net` (currently hosts the
-  HF key-class ONNX models)
-- `r2-assets.json` lists what lives on R2 (destination path, content type, caching).
-
-### CORS (required, human action)
-
-The app is served from a different origin than R2, so it fetches models
-cross-origin. The browser blocks a cross-origin `fetch()` whose response lacks
-`Access-Control-Allow-Origin` — so **without a CORS policy on the bucket the HF
-detectors cannot load at all**, progress can't be measured, and the service
-worker can't store a readable copy.
-
-The bucket must return CORS headers for GET. R2 bucket CORS policy (Cloudflare
-dashboard → R2 → bucket → Settings → CORS, or via API):
-
-```json
-[
-  { "AllowedOrigins": ["*"], "AllowedMethods": ["GET", "HEAD"], "AllowedHeaders": ["*"], "ExposeHeaders": ["Content-Length"], "MaxAgeSeconds": 86400 }
-]
-```
-
-The objects already send `Cache-Control: public, max-age=31536000, immutable`
-(verified), so once CORS is in place the browser HTTP cache and the service
-worker `CacheFirst` rule (see `vite.config.js`) cache each model for good.
-
-Uploads to the bucket are done by a human — agents have no R2 credentials and
-must not assume write access. To get a new large asset (e.g. an ONNX model)
-onto R2:
-
-1. Prepare a script that downloads or generates the asset (never commit the
-   asset itself).
-2. Suggest a destination path under the base URL (e.g. `models/<name>.onnx` —
-   lowercase, hyphenated, with quantization/variant suffix where relevant).
-3. Add the entry to `r2-assets.json` and ask the human to run the script and
-   upload the result.
 
 ---
 

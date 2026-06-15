@@ -10,7 +10,7 @@ export class KeyDetector {
    * @param {number} sampleRate
    * @param {number} bufferSize
    * @param {(progress: { loaded: number, total: number }) => void} [onProgress]
-   *   Optional callback invoked while large assets (e.g. R2 models) download.
+   *   Optional callback invoked while large assets download.
    * @returns {Promise<void>}
    */
   async init(sampleRate, bufferSize, onProgress) {

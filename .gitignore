@@ -15,8 +15,7 @@ dist/
 # Playwright artifacts:
 test-results/
 playwright-report/
-# Benchmark audio is generated on the fly from abc/ — never commit WAV/model
-# binaries (GitHub 100MB limit; large assets live on Cloudflare R2):
+# Benchmark audio is generated on the fly from abc/ — never commit WAV
+# binaries (GitHub 100MB limit):
 *.wav
-*.onnx
 .env
