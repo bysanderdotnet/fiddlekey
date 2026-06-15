@@ -21,15 +21,35 @@ function escapeHTML(str) {
 }
 
 
+// Dot size encodes safety: safest = biggest, least safe = smallest (but still
+// readable). Avoid notes are not drawn at all. Safety scores run ~0.32..1.0
+// (carefulThreshold..max) — map that band onto these pixel sizes.
+const SAFETY_FLOOR = 0.3;   // <= this -> smallest readable dot
+const SAFETY_CEIL = 1.0;    // >= this -> biggest dot
+const RADIUS_MIN = 9;       // still readable
+const RADIUS_MAX = 18;
+const FONT_MIN = 8;
+const FONT_MAX = 13;
+
+/** Linear map a safety score (0..1) onto [lo, hi] across the displayed band. */
+function safetyScale(safety, lo, hi) {
+  const s = typeof safety === 'number' ? safety : SAFETY_FLOOR;
+  let t = (s - SAFETY_FLOOR) / (SAFETY_CEIL - SAFETY_FLOOR);
+  t = t < 0 ? 0 : t > 1 ? 1 : t;
+  return lo + t * (hi - lo);
+}
+
 /**
  * Updates the SVG fingerboard from a note-safety result (IMPLEMENTATION.md
- * Phase 3). Colour by safety class, never by tonic/mode:
- *   safe    -> green fill (strongest highlight)
- *   careful -> no fill, dotted yellow/orange border (weaker, unclear)
+ * Phase 3). Encode safety by SIZE, never by tonic/mode:
+ *   safest  -> biggest dot
+ *   least safe -> smallest (still readable) dot
  *   avoid / very unsure -> not drawn at all (a blank position beats a
  *   wrong-but-confident dot).
+ * safe = green fill, careful = dotted orange border, but the player reads
+ * safety primarily off the dot's size.
  * Each dot shows the note name in the circle; the finger number sits beside it.
- * @param {Object|null} noteSafety { status, safe:[{note}], careful:[{note}] }
+ * @param {Object|null} noteSafety { status, safe:[{note,safety}], careful:[{note,safety}] }
  */
 export function updateFingerboard(noteSafety) {
   const container = document.getElementById('fingerboard');
@@ -41,15 +61,15 @@ export function updateFingerboard(noteSafety) {
   }
 
   try {
-    const safe = (noteSafety.safe || []).map(e => e.note);
-    const careful = (noteSafety.careful || []).map(e => e.note);
+    const safe = (noteSafety.safe || []).map(e => ({ note: e.note, safety: e.safety, isSafe: true }));
+    const careful = (noteSafety.careful || []).map(e => ({ note: e.note, safety: e.safety, isSafe: false }));
 
     if (safe.length === 0 && careful.length === 0) {
       container.innerHTML = '';
       return;
     }
 
-    renderFingerboard(container, safe, careful);
+    renderFingerboard(container, [...safe, ...careful]);
   } catch (error) {
     console.error('Error updating fingerboard:', error);
   }
@@ -57,8 +77,9 @@ export function updateFingerboard(noteSafety) {
 
 /**
  * Renders the SVG fingerboard.
+ * @param {Array<{note:string, safety:number, isSafe:boolean}>} entries
  */
-function renderFingerboard(container, safe, careful) {
+function renderFingerboard(container, entries) {
   const width = 300;
   const height = 500;
   const margin = { top: 40, right: 30, bottom: 20, left: 30 };
@@ -92,11 +113,9 @@ function renderFingerboard(container, safe, careful) {
 
   // Map safe + careful notes to fingerboard positions. Avoid notes are never
   // drawn — a blank position is better than a wrong-but-confident dot.
-  const safeSet = new Set(safe);
   const notesToDisplay = [];
-  [...safe, ...careful].forEach(noteName => {
-    const isSafe = safeSet.has(noteName);
-    const octaves = getNoteOctaves(noteName);
+  entries.forEach(entry => {
+    const octaves = getNoteOctaves(entry.note);
 
     octaves.forEach(noteWithOctave => {
       const midi = Note.midi(noteWithOctave);
@@ -108,18 +127,22 @@ function renderFingerboard(container, safe, careful) {
         const pos = midi - root;
         // First position usually spans 7 semitones (up to 4th finger)
         if (pos >= 0 && pos <= 7) {
-          notesToDisplay.push({ string: s, pos, name: noteName, isSafe });
+          notesToDisplay.push({ string: s, pos, name: entry.note, safety: entry.safety, isSafe: entry.isSafe });
         }
       }
     });
   });
 
-  // Render dots. Note name goes inside the circle; the finger number sits
-  // beside it (the inverse of the old layout).
+  // Draw smallest dots last so safer (bigger) notes don't bury them.
+  notesToDisplay.sort((a, b) => (b.safety ?? 0) - (a.safety ?? 0));
+
+  // Render dots. Size encodes safety (biggest = safest). Note name goes inside
+  // the circle; the finger number sits beside it.
   notesToDisplay.forEach(n => {
     const x = margin.left + n.string * stringSpacing;
     const y = n.pos === 0 ? margin.top : margin.top + n.pos * posHeight;
-    const radius = 14;
+    const radius = safetyScale(n.safety, RADIUS_MIN, RADIUS_MAX);
+    const fontSize = safetyScale(n.safety, FONT_MIN, FONT_MAX);
 
     // Finger number mapping
     let finger = '0';
@@ -130,15 +153,15 @@ function renderFingerboard(container, safe, careful) {
 
     // safe = green fill, careful = no fill + dotted yellow/orange border.
     const circle = n.isSafe
-      ? `<circle cx="${x}" cy="${y}" r="${radius}" fill="var(--accent-color, #4caf50)" />`
-      : `<circle cx="${x}" cy="${y}" r="${radius}" fill="none" stroke="var(--warn-color, #ffc107)" stroke-width="2" stroke-dasharray="3,2" />`;
+      ? `<circle cx="${x}" cy="${y}" r="${radius.toFixed(1)}" fill="var(--accent-color, #4caf50)" />`
+      : `<circle cx="${x}" cy="${y}" r="${radius.toFixed(1)}" fill="none" stroke="var(--warn-color, #ffc107)" stroke-width="2" stroke-dasharray="3,2" />`;
     const noteColor = n.isSafe ? '#ffffff' : 'var(--warn-color, #ffc107)';
 
     svgParts.push(`
       <g class="note-dot ${n.isSafe ? 'safe' : 'careful'}">
         ${circle}
-        <text x="${x}" y="${y + 4}" text-anchor="middle" fill="${noteColor}" font-size="11" font-weight="bold">${escapeHTML(n.name)}</text>
-        <text x="${x + 18}" y="${y + 5}" text-anchor="start" fill="#aaa" font-size="11" font-weight="bold">${escapeHTML(finger)}</text>
+        <text x="${x}" y="${(y + fontSize / 3).toFixed(1)}" text-anchor="middle" fill="${noteColor}" font-size="${fontSize.toFixed(1)}" font-weight="bold">${escapeHTML(n.name)}</text>
+        <text x="${(x + radius + 4).toFixed(1)}" y="${y + 5}" text-anchor="start" fill="#aaa" font-size="11" font-weight="bold">${escapeHTML(finger)}</text>
       </g>
     `);
   });
