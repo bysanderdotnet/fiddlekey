@@ -4,64 +4,11 @@
  * page iterates this registry to compare detectors against the ABC fixtures.
  */
 
-// Large models live on Cloudflare R2 (see README + r2-assets.json). Listed here
-// so the app can prefetch the selected detector's model before the user hits
-// "Detect key". Runtime WASM (essentia, onnxruntime-web) ships in the build and
-// is precached by the service worker, so it needs no R2 prefetch.
-const MODEL_BASE_URL = __MODEL_BASE_URL__;
-
 export const DETECTORS = {
   essentia: {
     id: 'essentia',
     label: 'Essentia.js HPCP',
-    loadDetectorClass: async () => (await import('./specifics/essentia-detector.js')).EssentiaDetector
-  },
-  webaudioPcp: {
-    id: 'webaudioPcp',
-    label: 'Web Audio PCP',
-    loadDetectorClass: async () => (await import('./specifics/webaudio-pcp-detector.js')).WebAudioPCPDetector
-  },
-  essentiaKeyExtractor: {
-    id: 'essentiaKeyExtractor',
-    label: 'Essentia.js KeyExtractor',
-    loadDetectorClass: async () => (await import('./specifics/essentia-key-extractor-detector.js')).KeyEssentiaKeyExtractorDetector
-  },
-  essentiaNnls: {
-    id: 'essentiaNnls',
-    label: 'Essentia.js NNLS chroma',
-    loadDetectorClass: async () => (await import('./specifics/essentia-nnls-detector.js')).KeyEssentiaNNLSDetector
-  },
-  meyda: {
-    id: 'meyda',
-    label: 'Meyda chroma',
-    loadDetectorClass: async () => (await import('./specifics/meyda-detector.js')).MeydaDetector
-  },
-  mlPitchHistogram: {
-    id: 'mlPitchHistogram',
-    label: 'ML pitch-tracking histogram',
-    loadDetectorClass: async () => (await import('./specifics/ml-pitch-histogram-detector.js')).MLPitchHistogramDetector
-  },
-  ensemble: {
-    id: 'ensemble',
-    label: 'Ensemble (Essentia + Meyda + Web Audio)',
-    loadDetectorClass: async () => (await import('./specifics/ensemble-detector.js')).EnsembleDetector
-  },
-  onnxCnn: {
-    id: 'onnxCnn',
-    label: 'ONNX CNN key classifier',
-    loadDetectorClass: async () => (await import('./specifics/onnx-cnn-detector.js')).OnnxCnnDetector
-  },
-  hfKeyClass: {
-    id: 'hfKeyClass',
-    label: 'HF Key Class CNN (jcarbonnell)',
-    assetUrls: [`${MODEL_BASE_URL}/models/hf-key-class-int8.onnx`],
-    loadDetectorClass: async () => (await import('./specifics/hf-key-class-detector.js')).HFKeyClassDetector
-  },
-  hfKeyClassNonQuantized: {
-    id: 'hfKeyClassNonQuantized',
-    label: 'HF Key Class CNN nonquantized (jcarbonnell)',
-    assetUrls: [`${MODEL_BASE_URL}/models/hf-key-class-nonquantized.onnx`],
-    loadDetectorClass: async () => (await import('./specifics/hf-key-class-detector.js')).HFKeyClassNonQuantizedDetector
+    loadDetectorClass: async () => (await import('../detectors/essentia-detector.js')).EssentiaDetector
   }
 };
 
@@ -73,17 +20,6 @@ export function getDetectorOptions() {
 
 export function getDetectorIds() {
   return getDetectorOptions().map(({ id }) => id);
-}
-
-/**
- * URLs of large remote assets (R2 models) a detector needs at runtime. Used to
- * prefetch before the user starts detection. Empty for detectors with no
- * remote assets.
- * @param {string} id
- * @returns {string[]}
- */
-export function getDetectorAssetUrls(id) {
-  return DETECTORS[id]?.assetUrls ?? [];
 }
 
 /**

@@ -11,7 +11,7 @@ handoff. All state in `.agents/agents.json`, CLI-owned — never hand-edit.
 ## Project
 
 - Name: Fiddlekey
-- Stack: Vanilla JS + Vite PWA; essentia.js / Web Audio detectors in a Web
+- Stack: Vanilla JS + Vite PWA; essentia.js HPCP detector in a Web
   Worker; Vitest unit tests; Playwright e2e against production build.
 - Purpose: Web app that listens to a jam session and tells the player which
   notes are safe to play now. Safe=green, careful=white, very-unsure=hidden.
@@ -27,8 +27,7 @@ handoff. All state in `.agents/agents.json`, CLI-owned — never hand-edit.
   not reading or editing source.
 - Never test via `vite dev` — always `npm run build` + static serve
   (`npm run preview`); dev bundles workers/WASM differently.
-- Never commit large/binary assets (WAV, ONNX) — host on Cloudflare R2
-  (see README). No Git LFS.
+- Never commit large/binary assets (e.g. WAV). No Git LFS.
 - Detection modes = `major`/`minor` only. Never reintroduce modal keys.
 - Product output = safe/careful/avoid notes (`computeNoteSafety`), not a key
   label. UI must not depend on `tonic`/`mode`. Pivot plan: IMPLEMENTATION.md.

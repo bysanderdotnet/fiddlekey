@@ -7,7 +7,7 @@ test.describe('benchmark page', () => {
   test('loads with detector and tune selection', async ({ page }) => {
     await page.goto('/benchmark.html');
     await expect(page.locator('h1')).toContainText('Benchmark');
-    expect(await page.locator('input[name="detector"]').count()).toBeGreaterThan(5);
+    expect(await page.locator('input[name="detector"]').count()).toBe(1);
     expect(await page.locator('input[name="tune"]').count()).toBe(9);
     await expect(page.locator('#runBenchmark')).toBeEnabled();
   });
@@ -19,7 +19,7 @@ test.describe('benchmark page', () => {
 
     const runOnce = () => page.evaluate(async () => {
       return await window.fiddlekeyBenchmark.run({
-        detectors: ['webaudioPcp'],
+        detectors: ['essentia'],
         tunes: ['c_major'],
         durationSec: 15,
         noise: { type: 'session', snrDb: 15, seed: 1 }
@@ -52,7 +52,7 @@ test.describe('benchmark page', () => {
     // Results rendered in the page too.
     await expect(page.locator('#results-table tbody tr')).toHaveCount(1);
     await expect(page.locator('#summary-table tbody tr')).toHaveCount(1);
-    await expect(page.locator('#benchmark-json')).toContainText('"detectorId": "webaudioPcp"');
+    await expect(page.locator('#benchmark-json')).toContainText('"detectorId": "essentia"');
     await expect(page.locator('#benchmark-json')).toContainText('"noteSafetyMetrics"');
 
     // Determinism: identical options -> identical detection trace

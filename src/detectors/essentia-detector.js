@@ -6,12 +6,12 @@
  * averaged chroma against the major/minor key profiles every 500 ms. Results
  * are stabilized with a majority-vote smoother.
  */
-import { getAveragedChroma } from '../../utils/chroma.js';
-import { KeyDetector } from '../detector.js';
+import { getAveragedChroma } from '../utils/chroma.js';
+import { KeyDetector } from '../detection/detector.js';
 import { EssentiaWASM } from 'essentia.js/dist/essentia-wasm.es.js';
 import Essentia from 'essentia.js/dist/essentia.js-core.es.js';
-import { KeySmoother } from '../../utils/smoothing.js';
-import { detectKey, detectKeyCandidates, rotate } from '../profile-matching.js';
+import { KeySmoother } from '../utils/smoothing.js';
+import { detectKey, detectKeyCandidates, rotate } from '../detection/profile-matching.js';
 
 const EMIT_INTERVAL_MS = 500;
 
