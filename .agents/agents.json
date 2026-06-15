@@ -65,7 +65,7 @@
     {
       "id": "F-00005",
       "title": "CI toolchain for verify",
-      "status": "blocked",
+      "status": "done",
       "notes": "Needs human: .github/workflows/agents.yml is human-owned; add setup-node + npm ci + npx playwright install chromium --with-deps before ./AGENTS.sh ci."
     },
     {
@@ -119,7 +119,7 @@
     {
       "id": "F-00014",
       "title": "Tune note-safety thresholds (IMPLEMENTATION.md Phase 5)",
-      "status": "todo",
+      "status": "done",
       "notes": "IMPLEMENTATION.md Phase 5. Tune thresholds from benchmark results, not guessing: noisy clips -> conservative, ambiguous clips -> careful not green. Real fixtures only if small enough for GitHub else R2 + keep metadata in repo (R-005/R-010). Needs F-00013."
     },
     {
