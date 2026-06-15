@@ -18,7 +18,7 @@ test('app loads, starts analyzing, no console or page errors', async ({ page }) 
   await page.click('#closeOnboarding');
   await expect(page.locator('#onboarding')).toBeHidden();
 
-  // Click "Detect key" to trigger getUserMedia + AudioWorklet + worker + detector init
+  // Click "Detect notes" to trigger getUserMedia + AudioWorklet + worker + detector init
   const detectButton = page.locator('#startButton');
   await detectButton.click();
   await expect(detectButton).toHaveText('Analyzing...', { timeout: 15_000 });
@@ -50,6 +50,6 @@ test('shows error when microphone permission is denied', async ({ page }) => {
   await detectButton.click();
 
   await expect(page.locator('#error-message')).toContainText('Error: Microphone access is required');
-  await expect(detectButton).toContainText('Detect key');
+  await expect(detectButton).toContainText('Detect notes');
   await expect(detectButton).toBeEnabled();
 });

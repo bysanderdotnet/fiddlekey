@@ -14,9 +14,9 @@ const STATUS_BADGE = {
 };
 
 const STATUS_TEXT = {
-  uncertain: 'Audio is ambiguous — try the careful notes quietly.',
-  usable: 'Based on several possible key areas.',
-  stable: 'Based on several possible key areas.'
+  uncertain: 'Audio is ambiguous — try the dotted notes quietly.',
+  usable: 'Green notes fit well — start there.',
+  stable: 'Green notes fit well — start there.'
 };
 
 /**
