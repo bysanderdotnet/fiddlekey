@@ -1,7 +1,7 @@
 /**
  * src/theory/note-safety.js
  *
- * Core of the note-safety pivot (IMPLEMENTATION.md, Phase 1). Turns ranked
+ * Core of the note-safety pivot. Turns ranked
  * detector key candidates (tonic + major/minor — detector internals only) into
  * the product answer: which notes are safe / careful / avoid to play right now.
  *
@@ -211,7 +211,7 @@ export function computeNoteSafety({ candidates, observedChroma, options } = {}) 
     }
   }
 
-  // 5. Build output. Reasons mirror IMPLEMENTATION.md sample output.
+  // 5. Build output.
   const topTonic = plausible[0].index;
   const anchorSet = new Set([topTonic % 12, (topTonic + 7) % 12]);
   const safe = [];

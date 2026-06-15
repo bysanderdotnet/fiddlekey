@@ -22,8 +22,8 @@ function escapeHTML(str) {
 
 
 /**
- * Updates the SVG fingerboard from a note-safety result (IMPLEMENTATION.md
- * Phase 3). Colour by safety class, never by tonic/mode:
+ * Updates the SVG fingerboard from a note-safety result.
+ * Colour by safety class, never by tonic/mode:
  *   safe    -> green fill (strongest highlight)
  *   careful -> no fill, dotted yellow/orange border (weaker, unclear)
  *   avoid / very unsure -> not drawn at all (a blank position beats a

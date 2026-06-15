@@ -168,7 +168,7 @@ async function showSettledNotes(detection) {
 
   isAnalyzing = false;
   // Product output = safe/careful notes, not a key label. UI must not read
-  // tonic/mode (IMPLEMENTATION.md Phase 3); key badge is status/debug only.
+  // tonic/mode; key badge is status/debug only.
   const noteSafety = detectionToNoteSafety(detection);
   updateFingerboard(noteSafety);
   updateKeyDisplay(noteSafety);

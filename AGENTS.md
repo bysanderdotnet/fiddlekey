@@ -15,7 +15,7 @@ handoff. All state in `.agents/agents.json`, CLI-owned — never hand-edit.
   Worker; Vitest unit tests; Playwright e2e against production build.
 - Purpose: Web app that listens to a jam session and tells the player which
   notes are safe to play now. Safe=green, careful=white, very-unsure=hidden.
-  Note safety is the product output (see IMPLEMENTATION.md).
+  Note safety is the product output.
 - Engine: detectors still compute tonic + major/minor ONLY internally (no
   church modes — Bourdon's mistake). Key label = debug, never the answer.
 
@@ -30,7 +30,7 @@ handoff. All state in `.agents/agents.json`, CLI-owned — never hand-edit.
 - Never commit large/binary assets (e.g. WAV). No Git LFS.
 - Detection modes = `major`/`minor` only. Never reintroduce modal keys.
 - Product output = safe/careful/avoid notes (`computeNoteSafety`), not a key
-  label. UI must not depend on `tonic`/`mode`. Pivot plan: IMPLEMENTATION.md.
+  label. UI must not depend on `tonic`/`mode`.
 
 ## Skills
 

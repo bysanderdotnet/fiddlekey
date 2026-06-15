@@ -100,7 +100,7 @@ function computeMetrics({ updates, finalDetection, wallMs }, expected, meta) {
   const noteSafetyMetrics = computeNoteSafetyMetrics(noteSafety, meta);
 
   return {
-    // Note safety = the product answer (IMPLEMENTATION.md Phase 4).
+    // Note safety = the product answer.
     noteSafety: noteSafety
       ? { status: noteSafety.status, safe: noteSafety.safe, careful: noteSafety.careful, avoid: noteSafety.avoid, ambiguity: noteSafety.ambiguity }
       : null,
@@ -181,7 +181,7 @@ export function summarize(results) {
     return {
       detectorId: acc.detectorId,
       runs: acc.runs,
-      // Note-safety = product metrics (IMPLEMENTATION.md Phase 4).
+      // Note-safety = product metrics.
       noteSafetyScore: ns ? ns.avgScore : 0,
       safePrecision: ns ? ns.avgSafePrecision : 0,
       safeRecall: ns ? ns.avgSafeRecall : 0,

@@ -14,11 +14,9 @@ No sheet music required. No internet required. No music theory required — you
 do **not** need to know or care whether the tune is "D major". Just open it on
 your phone and start playing.
 
-> **Pivot in progress.** Fiddlekey used to lead with a *key* label (tonic +
-> major/minor). It now leads with **safe notes**: the key is computed
-> internally as an engine detail and is debug-only. See
-> [`IMPLEMENTATION.md`](IMPLEMENTATION.md) for the migration plan and
-> `./AGENTS.sh feature list` for the tracked phases.
+> Fiddlekey used to lead with a *key* label (tonic + major/minor). It now
+> leads with **safe notes**: the key is computed internally as an engine
+> detail and is debug-only.
 
 Fiddlekey is the successor of [Bourdon](https://github.com/bysanderdotnet/bourdon).
 Bourdon tried to detect full church modes (Dorian, Mixolydian, ...) and grew too
@@ -42,7 +40,7 @@ fingers on. Once you know which notes are safe, your ear can do the rest.
 
 | Feature | Description |
 |---|---|
-| 🟢 **Safe notes** *(in progress)* | Ranks every note as **safe** (green), **careful** (white), or **avoid** (hidden) from live mic audio — no key label needed. See [`IMPLEMENTATION.md`](IMPLEMENTATION.md) |
+| 🟢 **Safe notes** | Ranks every note as **safe** (green), **careful** (white), or **avoid** (hidden) from live mic audio — no key label needed. |
 | 🖐️ **Finger placement** | SVG violin fingerboard, first position; each note coloured by safety — green = safe, white = careful, very-unsure notes are left blank |
 | 🤝 **Ambiguity-aware** *(in progress)* | When two notes (e.g. C / C#) are both plausible, both are shown as *careful* instead of guessing — conservative beats overconfident |
 | 🎵 **Key engine** *(debug)* | Tonic + major/minor is still computed internally to feed safe-note scoring; it is no longer the product output and is hidden by default |
@@ -119,8 +117,7 @@ output. The *product* output is a **note-safety** object from
 
 The UI renders `safe` / `careful` / `avoid` and **must not depend on `tonic`
 or `mode`**. Fingerboard colour code: **safe → green, careful → white,
-avoid / very-unsure → not drawn**. Full spec and rollout phases:
-[`IMPLEMENTATION.md`](IMPLEMENTATION.md).
+avoid / very-unsure → not drawn**.
 
 ### Adding a detector
 
@@ -138,12 +135,10 @@ to check whether the change actually improved accuracy or time-to-detect — and
 use the per-detector summary table to decide which detector should be the
 default (`DEFAULT_DETECTOR_ID` in `src/detection/factory.js`).
 
-> **Pivot note.** The benchmark currently scores exact key correctness. As part
-> of the note-safety pivot it will also score **note safety** against
+> **Note-safety scoring.** The benchmark scores **note safety** against
 > `abc/metadata.json` (safe-note precision/recall, dangerous-green count,
 > ambiguity handled) — punishing a clashing "safe" note harder than a missed
-> one. Key correctness stays as a debug metric. See [`IMPLEMENTATION.md`](IMPLEMENTATION.md)
-> Phase 4.
+> one. Key correctness stays as a debug metric.
 
 How it works:
 

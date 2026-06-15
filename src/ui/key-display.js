@@ -1,7 +1,7 @@
 /**
  * src/ui/key-display.js
  *
- * Status badge for the note-safety result (IMPLEMENTATION.md Phase 3).
+ * Status badge for the note-safety result.
  * NOT a key label: never shows "D major". Reads only the note-safety
  * status + debug confidence — never tonic/mode as the product answer.
  */

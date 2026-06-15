@@ -38,7 +38,7 @@ test.describe('benchmark page', () => {
     // the detector recognizes C major at least once.
     expect(row.firstCorrectMs).not.toBeNull();
 
-    // Note safety = the product answer (IMPLEMENTATION.md Phase 4).
+    // Note safety = the product answer.
     expect(row.noteSafety).not.toBeNull();
     expect(Array.isArray(row.noteSafety.safe)).toBe(true);
     const nm = row.noteSafetyMetrics;

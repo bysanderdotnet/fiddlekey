@@ -1,5 +1,5 @@
 /**
- * Note-safety benchmark metrics (IMPLEMENTATION.md Phase 4). Scores a
+ * Note-safety benchmark metrics. Scores a
  * computeNoteSafety() result against practical jam metadata (abc/metadata.json):
  * which notes a player can actually get away with over this tune.
  *

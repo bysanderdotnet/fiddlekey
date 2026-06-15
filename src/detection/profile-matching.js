@@ -98,7 +98,7 @@ export function scoreKeyCandidates(chroma, options = {}) {
 
 /**
  * Returns the ranked key candidates as {tonic, mode, score, rawScore}, tonic as
- * a note name. Feeds the note-safety layer (IMPLEMENTATION.md Phase 2); the
+ * a note name. Feeds the note-safety layer; the
  * `mode` stays internal and must never be the product answer.
  * @param {number[]} chroma
  * @param {Object} [options] { commonKeyBoost }

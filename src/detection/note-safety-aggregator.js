@@ -7,7 +7,7 @@
  *
  * Supports detectors that already expose a ranked `candidates` array AND old
  * detectors that only emit `{ tonic, mode, alternate }`, so the UI can migrate
- * before every detector is updated (IMPLEMENTATION.md Phase 1/2).
+ * before every detector is updated.
  */
 import { computeNoteSafety, DEFAULT_NOTE_SAFETY_OPTIONS } from '../theory/note-safety.js';
 
