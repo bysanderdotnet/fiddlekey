@@ -2,14 +2,13 @@ import { startAudio, stopAudio } from './audio/capture.js';
 import { updateKeyDisplay } from './ui/key-display.js';
 import { updateFingerboard } from './ui/fingerboard.js';
 import { detectionToNoteSafety } from './detection/note-safety-aggregator.js';
-import { DEFAULT_DETECTOR_ID, getDetectorOptions } from './detection/factory.js';
+import { DEFAULT_DETECTOR_ID } from './detection/factory.js';
 
 console.log('Fiddlekey app started');
 
 const MIN_SETTLED_AUDIO_MS = 10_000;
 
 const startButton = document.getElementById('startButton');
-const detectorSelect = document.getElementById('detectorSelect');
 const installButton = document.getElementById('installButton');
 const onboarding = document.getElementById('onboarding');
 const closeOnboarding = document.getElementById('closeOnboarding');
@@ -28,38 +27,6 @@ if (startButton) {
     }
   });
 }
-
-// --- Settings ---
-function initDetectorSettings() {
-  if (!detectorSelect) return;
-
-  const detectorOptions = getDetectorOptions();
-  detectorSelect.innerHTML = '';
-
-  for (const detector of detectorOptions) {
-    const option = document.createElement('option');
-    option.value = detector.id;
-    option.textContent = detector.label;
-    detectorSelect.appendChild(option);
-  }
-
-  const storedDetectorId = localStorage.getItem('fiddlekey_detector_id') || DEFAULT_DETECTOR_ID;
-  const validDetector = detectorOptions.some(detector => detector.id === storedDetectorId)
-    ? storedDetectorId
-    : DEFAULT_DETECTOR_ID;
-  detectorSelect.value = validDetector;
-  localStorage.setItem('fiddlekey_detector_id', validDetector);
-
-  detectorSelect.addEventListener('change', () => {
-    localStorage.setItem('fiddlekey_detector_id', detectorSelect.value);
-  });
-}
-
-function getSelectedDetectorId() {
-  return localStorage.getItem('fiddlekey_detector_id') || DEFAULT_DETECTOR_ID;
-}
-
-initDetectorSettings();
 
 // --- PWA Installation ---
 window.addEventListener('beforeinstallprompt', (e) => {
@@ -115,7 +82,7 @@ async function detectKey() {
     setAnalyzingUI(true, 'Initializing...');
 
     const audioState = await startAudio({
-      detectorId: getSelectedDetectorId(),
+      detectorId: DEFAULT_DETECTOR_ID,
       onMessage: handleWorkerMessage
     });
     isAnalyzing = true;
@@ -200,7 +167,6 @@ function setDownloadingUI(loaded, total) {
     startButton.disabled = true;
     startButton.textContent = pct !== null ? `Downloading ${pct}%` : 'Downloading…';
   }
-  if (detectorSelect) detectorSelect.disabled = true;
 
   if (!keyDisplayContainer) return;
 
@@ -234,10 +200,6 @@ function setAnalyzingUI(analyzing, text = '') {
   if (startButton) {
     startButton.disabled = analyzing;
     startButton.textContent = analyzing ? (text || 'Analyzing...') : 'Detect notes';
-  }
-
-  if (detectorSelect) {
-    detectorSelect.disabled = analyzing;
   }
 
   if (!keyDisplayContainer) return;
