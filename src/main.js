@@ -1,6 +1,5 @@
 import { startAudio, stopAudio } from './audio/capture.js';
 import { updateKeyDisplay } from './ui/key-display.js';
-import { updateNotesDisplay } from './ui/notes-display.js';
 import { updateFingerboard } from './ui/fingerboard.js';
 import { detectionToNoteSafety } from './detection/note-safety-aggregator.js';
 import { DEFAULT_DETECTOR_ID, getDetectorOptions, getDetectorAssetUrls } from './detection/factory.js';
@@ -58,7 +57,7 @@ function initDetectorSettings() {
 }
 
 // Warm the browser cache with the selected detector's large R2 model so the
-// download is (often) already done by the time the user hits "Detect key".
+// download is (often) already done by the time the user hits "Detect notes".
 // Runtime WASM ships in the build and is precached by the service worker.
 function prefetchDetectorAssets(detectorId) {
   for (const url of getDetectorAssetUrls(detectorId)) {
@@ -188,7 +187,6 @@ async function showSettledNotes(detection) {
   // Product output = safe/careful notes, not a key label. UI must not read
   // tonic/mode (IMPLEMENTATION.md Phase 3); key badge is status/debug only.
   const noteSafety = detectionToNoteSafety(detection);
-  updateNotesDisplay(noteSafety);
   updateFingerboard(noteSafety);
   updateKeyDisplay(noteSafety);
   await resetAnalysisState({ clearResults: false });
@@ -252,7 +250,7 @@ function setDownloadingUI(loaded, total) {
 function setAnalyzingUI(analyzing, text = '') {
   if (startButton) {
     startButton.disabled = analyzing;
-    startButton.textContent = analyzing ? (text || 'Analyzing...') : 'Detect key';
+    startButton.textContent = analyzing ? (text || 'Analyzing...') : 'Detect notes';
   }
 
   if (detectorSelect) {
@@ -282,6 +280,5 @@ function setAnalyzingUI(analyzing, text = '') {
 
 function clearDisplays() {
   updateKeyDisplay(null);
-  updateNotesDisplay(null);
   updateFingerboard(null);
 }

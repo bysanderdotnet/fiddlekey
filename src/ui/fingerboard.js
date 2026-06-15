@@ -24,10 +24,11 @@ function escapeHTML(str) {
 /**
  * Updates the SVG fingerboard from a note-safety result (IMPLEMENTATION.md
  * Phase 3). Colour by safety class, never by tonic/mode:
- *   safe    -> green  (strongest highlight)
- *   careful -> white  (weaker highlight)
+ *   safe    -> green fill (strongest highlight)
+ *   careful -> no fill, dotted yellow/orange border (weaker, unclear)
  *   avoid / very unsure -> not drawn at all (a blank position beats a
  *   wrong-but-confident dot).
+ * Each dot shows the note name in the circle; the finger number sits beside it.
  * @param {Object|null} noteSafety { status, safe:[{note}], careful:[{note}] }
  */
 export function updateFingerboard(noteSafety) {
@@ -113,14 +114,11 @@ function renderFingerboard(container, safe, careful) {
     });
   });
 
-  // Render dots
+  // Render dots. Note name goes inside the circle; the finger number sits
+  // beside it (the inverse of the old layout).
   notesToDisplay.forEach(n => {
     const x = margin.left + n.string * stringSpacing;
-    const y = margin.top + n.pos * posHeight;
-
-    // safe = green (strongest), careful = white (weaker).
-    const color = n.isSafe ? 'var(--accent-color, #4caf50)' : '#ffffff';
-    const textColor = n.isSafe ? '#ffffff' : '#000000';
+    const y = n.pos === 0 ? margin.top : margin.top + n.pos * posHeight;
     const radius = 14;
 
     // Finger number mapping
@@ -130,24 +128,19 @@ function renderFingerboard(container, safe, careful) {
     else if (n.pos === 5 || n.pos === 6) finger = '3';
     else if (n.pos === 7) finger = '4';
 
-    if (n.pos === 0) {
-      // Open string - show a ring at the nut
-      svgParts.push(`
-        <g class="note-dot open-string ${n.isSafe ? 'safe' : 'careful'}">
-          <circle cx="${x}" cy="${margin.top}" r="${radius}" fill="#121212" stroke="${color}" stroke-width="3" />
-          <text x="${x}" y="${margin.top + 5}" text-anchor="middle" fill="${color}" font-size="14" font-weight="bold">0</text>
-        </g>
-      `);
-    } else {
-      svgParts.push(`
-        <g class="note-dot ${n.isSafe ? 'safe' : 'careful'}">
-          <circle cx="${x}" cy="${y}" r="${radius}" fill="${color}" ${n.isSafe ? '' : 'stroke="#888" stroke-width="1"'} />
-          <text x="${x}" y="${y + 5}" text-anchor="middle" fill="${textColor}" font-size="14" font-weight="bold">${escapeHTML(finger)}</text>
-          <!-- Small note name label next to dot -->
-          <text x="${x + 18}" y="${y + 5}" text-anchor="start" fill="#ffffff" font-size="11" font-weight="bold">${escapeHTML(n.name)}</text>
-        </g>
-      `);
-    }
+    // safe = green fill, careful = no fill + dotted yellow/orange border.
+    const circle = n.isSafe
+      ? `<circle cx="${x}" cy="${y}" r="${radius}" fill="var(--accent-color, #4caf50)" />`
+      : `<circle cx="${x}" cy="${y}" r="${radius}" fill="none" stroke="var(--warn-color, #ffc107)" stroke-width="2" stroke-dasharray="3,2" />`;
+    const noteColor = n.isSafe ? '#ffffff' : 'var(--warn-color, #ffc107)';
+
+    svgParts.push(`
+      <g class="note-dot ${n.isSafe ? 'safe' : 'careful'}">
+        ${circle}
+        <text x="${x}" y="${y + 4}" text-anchor="middle" fill="${noteColor}" font-size="11" font-weight="bold">${escapeHTML(n.name)}</text>
+        <text x="${x + 18}" y="${y + 5}" text-anchor="start" fill="#aaa" font-size="11" font-weight="bold">${escapeHTML(finger)}</text>
+      </g>
+    `);
   });
 
   svgParts.push(`</svg>`);
